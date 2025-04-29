@@ -14,7 +14,7 @@ jobs:
     permissions:
       contents: write
     env:
-      IMAGE_NAME: ${{ github.event.repository.name }}/rhel
+      IMAGE_NAME: ${{ github.event.repository.name }}-rhel
       REGISTRY: ghcr.io/${{ github.repository_owner }}
     container:
       image: registry.access.redhat.com/ubi9/ubi
@@ -62,7 +62,7 @@ jobs:
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           auth_file_path: /run/containers/0/auth.json
