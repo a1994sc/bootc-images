@@ -28,8 +28,9 @@ jobs:
         id: tag
         env:
           sha: ${{ github.sha }}
+          job: ${{ github.run_number }}
         run: |-
-          echo "TAG=$(cat rhel/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$(echo ${sha:0:8})" >> $GITHUB_OUTPUT
+          echo "TAG=$(cat rhel/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$(echo ${sha:0:8})-$job" >> $GITHUB_OUTPUT
 
       - name: Get container tools in UBI builder
         run: dnf -y install podman buildah skopeo
@@ -56,13 +57,13 @@ jobs:
           username: ${{ secrets.RHT_REG_SVCUSER }}
           password: ${{ secrets.RHT_REG_SVCPASS }}
           auth_file_path: /run/containers/0/auth.json
-      
+
       - name: Use buildah bud to create the image
         id: build-image
         uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2.13
         with:
           image: ${{ env.IMAGE_NAME }}
-          tags: latest ${{ steps.tag.outcome.TAG }}
+          tags: latest ${{ steps.tag.outputs.TAG }}
           containerfiles: |
             ./rhel/Containerfile
           context: ./rhel
