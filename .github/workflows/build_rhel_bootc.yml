@@ -24,6 +24,11 @@ jobs:
       - name: Clone the repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: Determine tag
+        id: tag
+        run: |-
+          echo "TAG=$(cat rhel/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$(git describe --first-parent --tags --always --abbrev=8)" >> $GITHUB_OUTPUT
+
       - name: Get container tools in UBI builder
         run: dnf -y install podman buildah skopeo
 
@@ -55,7 +60,7 @@ jobs:
         uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2.13
         with:
           image: ${{ env.IMAGE_NAME }}
-          tags: latest ${{ github.sha }}
+          tags: latest ${{ steps.tag.outcome.TAG }}
           containerfiles: |
             ./rhel/Containerfile
 
