@@ -14,6 +14,10 @@
       "matchStrings": ["FROM quay.io/fedora/fedora-bootc:(?<currentValue>\\S+)"],
       "depNameTemplate": "fedora",
       "datasourceTemplate": "custom.fedora-stable"
+    },
+    {
+      "matchPackageNames": ["quay.io/fedora/fedora-bootc"],
+      "enabled": false
     }
   ],
   "customDatasources": {
