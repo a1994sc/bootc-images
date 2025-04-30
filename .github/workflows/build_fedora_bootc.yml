@@ -1,0 +1,70 @@
+name: Build Fedora bootc image with GHA
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'fedora/**'
+    branches:
+      - main
+
+jobs:
+  subs:
+    name: Build Fedora bootc image
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    env:
+      IMAGE_NAME: ${{ github.event.repository.name }}/fedora
+      REGISTRY: ghcr.io/${{ github.repository_owner }}
+    container:
+      image: registry.access.redhat.com/ubi9/ubi
+      options: --privileged
+
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Determine tag
+        id: tag
+        env:
+          sha: ${{ github.sha }}
+          job: ${{ github.run_number }}
+        run: |-
+          echo "TAG=$(cat fedora/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$(echo ${sha:0:8})-$job" >> $GITHUB_OUTPUT
+
+      - name: Get container tools in UBI builder
+        run: dnf -y install podman buildah skopeo
+
+      # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
+      - name: Workaround open podman-login action issue
+        env:
+          auth: "{ \"auths\": {} }"
+        run: |
+          mkdir -p $HOME/.docker
+          echo $auth > $HOME/.docker/config.json
+
+      - name: Use buildah bud to create the image
+        id: build-image
+        uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2.13
+        with:
+          image: ${{ env.IMAGE_NAME }}
+          tags: latest ${{ steps.tag.outputs.TAG }}
+          containerfiles: |
+            ./fedora/Containerfile
+          context: ./fedora
+
+      - name: Log in to the GitHub Container registry
+        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          auth_file_path: /run/containers/0/auth.json
+
+      - name: Push to GitHub Container Repository
+        id: push-to-ghcr
+        uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2.8
+        with:
+          image: ${{ steps.build-image.outputs.image }}
+          tags: ${{ steps.build-image.outputs.tags }}
+          registry: ${{ env.REGISTRY }}
