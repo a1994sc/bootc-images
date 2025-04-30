@@ -20,7 +20,7 @@
     "fedora-stable": {
       "defaultRegistryUrlTemplate": "https://fedoraproject.org/releases.json",
       "transformTemplates": [
-        "{\"releases\": [{\"version\": $$.([0].version)}]}"
+        "{\"releases\": [{\"version\": $$[0].version}]}"
       ]
     }
   }
