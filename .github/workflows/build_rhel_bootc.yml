@@ -29,7 +29,7 @@ jobs:
         env:
           sha: ${{ github.sha }}
         run: |-
-          echo "TAG=$(cat rhel/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$(echo ${sha:0:8} | )" >> $GITHUB_OUTPUT
+          echo "TAG=$(cat rhel/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$(echo ${sha:0:8})" >> $GITHUB_OUTPUT
 
       - name: Get container tools in UBI builder
         run: dnf -y install podman buildah skopeo
