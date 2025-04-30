@@ -13,7 +13,6 @@
       "fileMatch": ["Containerfile$"],
       "matchStrings": ["FROM quay.io/fedora/fedora-bootc:(?<currentValue>\\S+)"],
       "depNameTemplate": "fedora",
-      "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)\\.(?<revision>\\d+)$",
       "datasourceTemplate": "custom.fedora-stable"
     }
   ],
