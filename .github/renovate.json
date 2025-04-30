@@ -12,6 +12,10 @@
     {
       "matchPackageNames": ["quay.io/fedora/fedora-bootc"],
       "enabled": false
+    },
+    {
+      "matchPackageNames": ["registry.redhat.io/rhel9/rhel-bootc"],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)-(?<patch>\\d+)$"
     }
   ],
   "regexManagers": [
