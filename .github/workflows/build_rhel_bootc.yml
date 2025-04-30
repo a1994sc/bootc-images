@@ -62,7 +62,7 @@ jobs:
           image: ${{ env.IMAGE_NAME }}
           tags: latest ${{ steps.tag.outcome.TAG }}
           containerfiles: |
-            Containerfile
+            ./rhel/Containerfile
           context: ./rhel
 
       - name: Log in to the GitHub Container registry
