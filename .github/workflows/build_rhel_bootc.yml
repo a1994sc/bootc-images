@@ -62,7 +62,8 @@ jobs:
           image: ${{ env.IMAGE_NAME }}
           tags: latest ${{ steps.tag.outcome.TAG }}
           containerfiles: |
-            ./rhel/Containerfile
+            Containerfile
+          context: ./rhel
 
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
