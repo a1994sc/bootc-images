@@ -2,6 +2,6 @@ FROM quay.io/fedora/fedora-bootc:42
 
 COPY static/ /
 
-RUN dnf -y install cloud-init && \
-    ln -s ../cloud-init.target /usr/lib/systemd/system/default.target.wants && \
+RUN dnf -y install open-vm-tools perl && \
+    systemctl enable vmtoolsd.service && \
     rm -rf /var/{cache,log} /var/lib/{dnf,rhsm}
