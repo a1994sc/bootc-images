@@ -2,6 +2,6 @@ FROM quay.io/almalinuxorg/almalinux-bootc:9.5-20250429
 
 COPY static/ /
 
-RUN dnf -y install firewalld policycoreutils-python-utils && \
+RUN dnf -y install firewalld policycoreutils-python-utils audit && \
     dnf -y update && \
     rm -rf /var/{cache,log} /var/lib/{dnf,rhsm}
