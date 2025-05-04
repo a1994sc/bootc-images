@@ -1,10 +1,18 @@
+# https://access.redhat.com/solutions/58439
+%pre
+echo -n "Enter Hostname: " > /dev/tty1
+read HOSTN
+echo "network --noipv6 --onboot=yes --bootproto=dhcp --activate --hostname ${HOSTN}" > /tmp/network.txt
+%end
+
 text --non-interactive
 eula --agreed
 
 keyboard us
 lang en_US.UTF-8
 
-network --noipv6 --onboot=yes --bootproto=dhcp --activate
+# allow for auto-magic provisioning hostname
+%include /tmp/network.txt
 
 rootpw --lock
 firewall --enabled --ssh
