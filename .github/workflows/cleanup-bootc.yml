@@ -1,0 +1,37 @@
+---
+name: Daily Image Cleanup
+on:
+  # every day at 01:30am
+  schedule:
+    - cron: '30 1 * * *'
+  # or manually
+  workflow_dispatch:
+jobs:
+  ghcr-cleanup-image:
+    name: ghcr cleanup action
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        packages:
+          - "${{ github.event.repository.name }}/rhel"
+          - "${{ github.event.repository.name }}/fedora"
+          - "${{ github.event.repository.name }}/alma"
+    steps:
+      - name: Delete old tags
+        uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1.0.16
+        with:
+          packages: "${{ matrix.packages }}"
+          keep-n-tagged: 3
+          token: '${{ secrets.GITHUB_TOKEN }}'
+
+      - name: Validate images
+        uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1.0.16
+        with:
+          packages: "${{ matrix.packages }}"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          validate: true
+          delete-ghost-images: true
+          delete-orphaned-images: true
