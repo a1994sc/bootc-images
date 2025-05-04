@@ -4,3 +4,6 @@ checksums.txt
 # ignore nix config directories/files
 /result*
 .direnv
+
+# Kickstart folder
+bootiso
