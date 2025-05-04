@@ -18,6 +18,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: Determine tag
+        id: tag
+        env:
+          sha: ${{ github.sha }}
+          job: ${{ github.run_number }}
+        run: |-
+          echo "TAG=$(cat almalinux/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$job-$(echo ${sha:0:8})" >> $GITHUB_OUTPUT
+
       - name: Download build dependencies
         run: |-
           sudo apt install -y genisoimage isomd5sum p7zip-full
@@ -38,12 +46,12 @@ jobs:
       - name: Build custom iso
         working-directory: bootiso
         run: |-
-          mkisofs -o ../boot.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -volid AlmaLinux-9-x86_64-dvd -R -J -v -T isolinux/. .
-          implantisomd5 ../boot.iso
+          mkisofs -o ../almalinux-${{ steps.tag.outputs.TAG }}.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -volid AlmaLinux-9-x86_64-dvd -R -J -v -T isolinux/. .
+          implantisomd5 ../almalinux-${{ steps.tag.outputs.TAG }}.iso
 
       - name: Upload Artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: almalinux-boot.iso
-          path: boot.iso
-          retention-days: 7
+          name: almalinux-${{ steps.tag.outputs.TAG }}
+          path: almalinux-${{ steps.tag.outputs.TAG }}.iso
+          retention-days: 1
