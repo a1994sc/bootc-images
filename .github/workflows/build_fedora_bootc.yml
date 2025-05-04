@@ -1,4 +1,4 @@
-name: Build Fedora bootc image with GHA
+name: Build Fedora bootc image
 on:
   workflow_dispatch:
   push:
@@ -6,6 +6,8 @@ on:
       - 'fedora/**'
     branches:
       - main
+  schedule:
+    - cron: '30 0 * * *'
 
 jobs:
   subs:

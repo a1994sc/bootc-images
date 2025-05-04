@@ -1,4 +1,4 @@
-name: Build RHEL bootc image with GHA
+name: Build RHEL bootc image
 on:
   workflow_dispatch:
   push:

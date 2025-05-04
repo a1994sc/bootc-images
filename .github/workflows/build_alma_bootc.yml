@@ -1,4 +1,4 @@
-name: Build Almalinux bootc image with GHA
+name: Build Almalinux bootc image
 on:
   workflow_dispatch:
   push:
