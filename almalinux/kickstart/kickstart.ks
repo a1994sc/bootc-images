@@ -4,7 +4,7 @@ eula --agreed
 keyboard us
 lang en_US.UTF-8
 
-network --noipv6 --onboot=yes --bootproto=dhcp --activate --device=eth0
+network --noipv6 --onboot=yes --bootproto=dhcp --activate
 
 rootpw --lock
 firewall --enabled --ssh
