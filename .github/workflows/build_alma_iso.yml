@@ -33,7 +33,6 @@ jobs:
       - name: Populate iso contents
         run: |-
           rm -rf bootiso/\[BOOT\]
-          cp almalinux/kickstart/isolinux.cfg bootiso/isolinux/isolinux.cfg
           cp almalinux/kickstart/kickstart.ks bootiso/isolinux/ks.cfg
 
       - name: Build custom iso

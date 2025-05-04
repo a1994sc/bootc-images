@@ -6,6 +6,8 @@ on:
       - 'almalinux/**'
     branches:
       - main
+  schedule:
+    - cron: '15 0 * * *'
 
 jobs:
   subs:
