@@ -30,7 +30,7 @@ logvol /var/log/audit --fstype xfs --name=lv_audit --vgname=sysvg --size=5120  -
 
 services --enabled=NetworkManager,sshd
 
-ostreecontainer --url ghcr.io/a1994sc/bootc-images/alma:latest
+ostreecontainer --url ghcr.io/a1994sc/bootc-images/fedora:latest
 
 user --name=sysadmin --plaintext --password=changeit --groups=wheel
 # a1994sc public ssh keys
