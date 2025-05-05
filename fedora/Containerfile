@@ -2,7 +2,7 @@ FROM quay.io/fedora/fedora-bootc:42
 
 COPY static/ /
 
-RUN dnf -y install firewalld policycoreutils-python-utils audit && \
+RUN dnf -y install firewalld policycoreutils-python-utils audit openssh && \
   dnf -y update && \
   rm -rf /var/{cache,log} /var/lib/{dnf,rhsm} && \
   chmod +x /etc/rc.d/rc.local

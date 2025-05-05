@@ -41,7 +41,8 @@ jobs:
       - name: Populate iso contents
         run: |-
           rm -rf bootiso/\[BOOT\]
-          cp almalinux/kickstart/kickstart.ks bootiso/isolinux/ks.cfg
+          cp kickstart/alma.ks   bootiso/isolinux/ks.cfg
+          cp kickstart/fedora.ks bootiso/isolinux/fedora.cfg
 
       - name: Build custom iso
         working-directory: bootiso

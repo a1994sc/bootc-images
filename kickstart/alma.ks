@@ -25,10 +25,12 @@ logvol /home          --fstype xfs --name=lv_home  --vgname=sysvg --size=13312 -
 logvol /tmp           --fstype xfs --name=lv_tmp   --vgname=sysvg --size=5120  --label=TMPFS    --fsoptions="nodev,noexec,nosuid"
 logvol /var           --fstype xfs --name=lv_var   --vgname=sysvg --size=15360 --label=VARFS    --fsoptions="nodev"
 logvol /var/lib       --fstype xfs --name=lv_lib   --vgname=sysvg --size=51200 --label=VARLIBFS --fsoptions="nodev"
+logvol /var/log       --fstype xfs --name=lv_log   --vgname=sysvg --size=5120  --label=LOGFS    --fsoptions="nodev,noexec,nosuid"
+logvol /var/log/audit --fstype xfs --name=lv_audit --vgname=sysvg --size=5120  --label=AUDITFS  --fsoptions="nodev,noexec,nosuid"
 
 services --enabled=NetworkManager,sshd
 
-ostreecontainer --url ghcr.io/a1994sc/bootc-images/fedora:latest
+ostreecontainer --url ghcr.io/a1994sc/bootc-images/alma:latest
 
 user --name=sysadmin --plaintext --password=changeit --groups=wheel
 # a1994sc public ssh keys
