@@ -41,7 +41,7 @@ jobs:
           orgid: ${{ secrets.RHT_ORGID }}
           activation_key: ${{ secrets.RHT_ACT_KEY }}
         run: subscription-manager register --org=$orgid --activationkey=$activation_key
-      
+
       # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
       - name: Workaround open podman-login action issue
         env:
@@ -49,7 +49,7 @@ jobs:
         run: |
           mkdir -p $HOME/.docker
           echo $auth > $HOME/.docker/config.json
-      
+
       - name: Log in to the RHT terms based registry
         uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
         with:
