@@ -1,0 +1,57 @@
+---
+name: Build alma iso
+
+on:
+  workflow_dispatch:
+
+env:
+  URL: https://download.fedoraproject.org/pub/fedora/linux/releases/42/Server/x86_64/iso/Fedora-Server-dvd-x86_64-42-1.1.iso
+
+# credit:
+# https://dailystuff.nl/blog/2023/create-a-kickstart-iso#manual-procedure
+# https://old.reddit.com/r/AlmaLinux/comments/1erxp8c/kickstart_unable_to_setup/
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Determine tag
+        id: tag
+        env:
+          sha: ${{ github.sha }}
+          job: ${{ github.run_number }}
+        run: |-
+          echo "TAG=$(cat fedora/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$job-$(echo ${sha:0:8})" >> $GITHUB_OUTPUT
+
+      - name: Download build dependencies
+        run: |-
+          sudo apt install -y genisoimage isomd5sum p7zip-full
+
+      - name: Pull iso
+        run: |-
+          curl -L -o /tmp/source.iso ${{ env.URL }}
+
+      - name: Extract iso contents
+        run: |-
+          7z x /tmp/source.iso -o./bootiso
+
+      - name: Populate iso contents
+        run: |-
+          rm -rf bootiso/\[BOOT\]
+          cp fedora/kickstart/kickstart.ks bootiso/isolinux/ks.cfg
+
+      - name: Build custom iso
+        working-directory: bootiso
+        run: |-
+          mkisofs -o ../fedora-${{ steps.tag.outputs.TAG }}.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -volid Fedora-S-dvd-x86_64-42 -R -J -v -T isolinux/. .
+          implantisomd5 ../fedora-${{ steps.tag.outputs.TAG }}.iso
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: fedora-${{ steps.tag.outputs.TAG }}
+          path: fedora-${{ steps.tag.outputs.TAG }}.iso
+          retention-days: 1
