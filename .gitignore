@@ -3,6 +3,7 @@ checksums.txt
 
 # ignore nix config directories/files
 /result*
+.pre-commit-config.yaml
 .direnv
 
 # Kickstart folder
