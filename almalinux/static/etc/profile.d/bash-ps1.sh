@@ -1,7 +1,7 @@
 #! /bin/bash
 
-if (( $UID < 1000 )); then
-  export PS1="[\[\e[38;5;11m\]\u\[\e[97;11m\]@\h:\[\e[36;11m\] \W\[\e[0;11m\]]: "
+if (( $UID > 1000 )); then
+  export PS1='[\[\e[93m\]\u\[\e[97m\]@\h:\[\e[36m\] \W\[\e[0m\]]: '
 else
-  export PS1="[\[\e[1;31;11m\]\u\[\e[97;11m\]@\h:\[\e[36;11m\] \W\[\e[0;11m\]]: "
+  export PS1='[\[\e[91m\]\u\[\e[97m\]@\h:\[\e[36m\] \W\[\e[0m\]]: '
 fi
