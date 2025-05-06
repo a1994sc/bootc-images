@@ -10,7 +10,10 @@
   "dependencyDashboard": true,
   "packageRules": [
     {
-      "matchPackageNames": ["quay.io/fedora/fedora-bootc"],
+      "matchPackageNames": [
+        "quay.io/fedora/fedora",
+        "quay.io/fedora/fedora-bootc"
+      ],
       "enabled": false
     },
     {
