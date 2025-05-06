@@ -54,7 +54,7 @@ jobs:
 
       - name: Generate iso
         run: |-
-          mkksiso --skip-mkefiboot --ks kickstart/alma.ks /tmp/iso/almalinux-server-dvd-9.iso almalinux-${{ steps.tag.outputs.TAG }}.iso
+          mkksiso --ks kickstart/alma.ks /tmp/iso/almalinux-server-dvd-9.iso almalinux-${{ steps.tag.outputs.TAG }}.iso
 
       - name: Upload Artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
