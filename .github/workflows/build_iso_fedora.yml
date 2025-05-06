@@ -31,6 +31,7 @@ jobs:
         run: dnf install -y lorax
 
       - name: Pull iso
+        working-directory: /tmp
         run: |-
           curl -L -O ${{ env.URL }}
 
