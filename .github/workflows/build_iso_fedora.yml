@@ -52,7 +52,7 @@ jobs:
 
       - name: Generate iso
         run: |-
-          mkksiso --skip-mkefiboot --ks kickstart/fedora.ks /tmp/fedora-server-dvd-42.iso fedora-${{ steps.tag.outputs.TAG }}.iso
+          mkksiso --skip-mkefiboot --ks kickstart/fedora.ks /tmp/iso/fedora-server-dvd-42.iso fedora-${{ steps.tag.outputs.TAG }}.iso
 
       - name: Upload Artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
