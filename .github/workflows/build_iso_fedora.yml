@@ -34,7 +34,7 @@ jobs:
         id: cache
         with:
           path: /tmp/iso
-          key: ${{ runner.os }}-fedora-server-dvd
+          key: ${{ runner.os }}-fedora-cache-
 
       - name: Pull iso
         if: steps.cache.outputs.cache-hit != 'true'
