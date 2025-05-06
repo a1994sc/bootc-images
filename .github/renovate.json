@@ -20,8 +20,14 @@
   ],
   "regexManagers": [
     {
-      "fileMatch": ["Containerfile$"],
-      "matchStrings": ["FROM quay.io/fedora/fedora-bootc:(?<currentValue>\\S+)"],
+      "fileMatch": [
+        "Containerfile$",
+        ".github/workflows/build_iso_fedora.yml$"
+      ],
+      "matchStrings": [
+        "FROM quay.io/fedora/fedora-bootc:(?<currentValue>\\S+)",
+        " +image: quay.io/fedora/fedora:(?<currentValue>\\S+)"
+      ],
       "depNameTemplate": "fedora",
       "datasourceTemplate": "custom.fedora-stable"
     }
