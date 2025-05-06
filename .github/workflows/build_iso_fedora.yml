@@ -30,10 +30,23 @@ jobs:
       - name: Get container tools in builder
         run: dnf install -y lorax
 
+      - uses: actions/cache@v4
+        id: cache
+        with:
+          path: /tmp/fedora-server-dvd-42.iso
+          key: ${{ runner.os }}-fedora-server-dvd
+
       - name: Pull iso
         working-directory: /tmp
+        if: steps.cache.outputs.cache-hit != 'true'
         run: |-
-          curl -L -O ${{ env.URL }}
+          curl -L -o fedora-server-dvd-42.iso ${{ env.URL }}
+
+      - uses: actions/cache@v4
+        if: steps.cache.outputs.cache-hit != 'true'
+        with:
+          path: /tmp/fedora-server-dvd-42.iso
+          key: ${{ runner.os }}-fedora-server-dvd
 
       - name: Generate iso
         run: |-
