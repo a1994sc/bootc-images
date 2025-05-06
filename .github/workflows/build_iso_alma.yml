@@ -1,5 +1,5 @@
 ---
-name: ISO, almalinux
+name: ISO, Almalinux
 
 on:
   workflow_dispatch:
@@ -28,7 +28,7 @@ jobs:
           sha: ${{ github.sha }}
           job: ${{ github.run_number }}
         run: |-
-          echo "TAG=$(cat fedora/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$job-$(echo ${sha:0:8})" >> $GITHUB_OUTPUT
+          echo "TAG=$(cat almalinux/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$job-$(echo ${sha:0:8})" >> $GITHUB_OUTPUT
           mkdir -p bootiso
 
       - name: Get container tools in builder
