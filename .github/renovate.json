@@ -18,7 +18,9 @@
     },
     {
       "matchPackageNames": [
-        "registry.redhat.io/rhel9/rhel-bootc"
+        "registry.redhat.io/rhel9/rhel-bootc",
+        "registry.access.redhat.com/ubi9/ubi",
+        "quay.io/almalinuxorg/9-base"
       ],
       "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)-(?<patch>\\d+)$"
     }
