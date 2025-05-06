@@ -1,5 +1,5 @@
 ---
-name: Daily Image Cleanup
+name: Cleanup, daily
 on:
   # every day at 01:30am
   schedule:
