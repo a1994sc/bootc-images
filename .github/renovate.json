@@ -30,7 +30,7 @@
       "customType": "regex",
       "fileMatch": [
         "Containerfile$",
-        ".github/workflows/build_iso_fedora.yml$"
+        "/^.github/workflows/.*\\.ya?ml$/"
       ],
       "matchStrings": [
         "FROM quay.io/fedora/fedora-bootc:(?<currentValue>\\S+)",
