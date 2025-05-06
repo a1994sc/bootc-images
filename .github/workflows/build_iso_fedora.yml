@@ -30,7 +30,7 @@ jobs:
       - name: Get container tools in builder
         run: dnf install -y lorax
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         id: cache
         with:
           path: /tmp/fedora-server-dvd-42.iso
@@ -42,7 +42,7 @@ jobs:
         run: |-
           curl -L -o fedora-server-dvd-42.iso ${{ env.URL }}
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         if: steps.cache.outputs.cache-hit != 'true'
         with:
           path: /tmp/fedora-server-dvd-42.iso
