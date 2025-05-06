@@ -30,7 +30,7 @@ jobs:
       - name: Get container tools in builder
         run: dnf install -y lorax
 
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         id: cache
         with:
           path: /tmp/fedora-server-dvd-42.iso
@@ -42,15 +42,17 @@ jobs:
         run: |-
           curl -L -o fedora-server-dvd-42.iso ${{ env.URL }}
 
-      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         if: steps.cache.outputs.cache-hit != 'true'
         with:
           path: /tmp/fedora-server-dvd-42.iso
           key: ${{ runner.os }}-fedora-server-dvd
+          restore-keys: |
+            ${{ runner.OS }}-fedora-cache-
 
       - name: Generate iso
         run: |-
-          mkksiso --skip-mkefiboot --ks kickstart/fedora.ks /tmp/Fedora-Server-dvd-x86_64-42-1.1.iso fedora-${{ steps.tag.outputs.TAG }}.iso
+          mkksiso --skip-mkefiboot --ks kickstart/fedora.ks /tmp/fedora-server-dvd-42.iso fedora-${{ steps.tag.outputs.TAG }}.iso
 
       - name: Upload Artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
