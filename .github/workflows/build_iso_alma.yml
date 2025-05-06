@@ -14,6 +14,10 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: quay.io/fedora/fedora:42
+      options: --privileged
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -24,31 +28,20 @@ jobs:
           sha: ${{ github.sha }}
           job: ${{ github.run_number }}
         run: |-
-          echo "TAG=$(cat almalinux/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$job-$(echo ${sha:0:8})" >> $GITHUB_OUTPUT
+          echo "TAG=$(cat fedora/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$job-$(echo ${sha:0:8})" >> $GITHUB_OUTPUT
+          mkdir -p bootiso
 
-      - name: Download build dependencies
-        run: |-
-          sudo apt install -y genisoimage isomd5sum p7zip-full
+      - name: Get container tools in builder
+        run: dnf install -y lorax
 
       - name: Pull iso
+        working-directory: /tmp
         run: |-
-          curl -L -o /tmp/source.iso ${{ env.URL }}
+          curl -L -O ${{ env.URL }}
 
-      - name: Extract iso contents
+      - name: Generate iso
         run: |-
-          7z x /tmp/source.iso -o./bootiso
-
-      - name: Populate iso contents
-        run: |-
-          rm -rf bootiso/\[BOOT\]
-          cp kickstart/alma.ks   bootiso/isolinux/ks.cfg
-          cp kickstart/fedora.ks bootiso/isolinux/fedora.cfg
-
-      - name: Build custom iso
-        working-directory: bootiso
-        run: |-
-          mkisofs -o ../almalinux-${{ steps.tag.outputs.TAG }}.iso -b isolinux.bin -c boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -volid AlmaLinux-9-x86_64-dvd -R -J -v -T isolinux/. .
-          implantisomd5 ../almalinux-${{ steps.tag.outputs.TAG }}.iso
+          mkksiso --skip-mkefiboot --ks kickstart/alma.ks /tmp/AlmaLinux-9.5-x86_64-minimal.iso almalinux-${{ steps.tag.outputs.TAG }}.iso
 
       - name: Upload Artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
