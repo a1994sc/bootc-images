@@ -33,7 +33,6 @@ jobs:
       - name: Pull iso
         run: |-
           curl -L -O ${{ env.URL }}
-          cp ../kickstart/fedora.ks ks.cfg
 
       - name: Generate iso
         run: |-
