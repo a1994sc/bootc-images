@@ -1,5 +1,5 @@
 ---
-name: Build alma iso
+name: Build fedora iso
 
 on:
   workflow_dispatch:
