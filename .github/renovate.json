@@ -17,12 +17,15 @@
       "enabled": false
     },
     {
-      "matchPackageNames": ["registry.redhat.io/rhel9/rhel-bootc"],
+      "matchPackageNames": [
+        "registry.redhat.io/rhel9/rhel-bootc"
+      ],
       "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)-(?<patch>\\d+)$"
     }
   ],
-  "regexManagers": [
+  "customManagers": [
     {
+      "customType": "regex",
       "fileMatch": [
         "Containerfile$",
         ".github/workflows/build_iso_fedora.yml$"
