@@ -1,4 +1,5 @@
-name: Build Fedora bootc image
+---
+name: Container, Fedora
 on:
   workflow_dispatch:
   push:

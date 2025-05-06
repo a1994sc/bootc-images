@@ -1,4 +1,5 @@
-name: Build RHEL bootc image
+---
+name: Container, RHEL
 on:
   workflow_dispatch:
   push:

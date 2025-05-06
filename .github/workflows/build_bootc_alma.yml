@@ -1,4 +1,5 @@
-name: Build Almalinux bootc image
+---
+name: Container, Almalinux
 on:
   workflow_dispatch:
   push:

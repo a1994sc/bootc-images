@@ -1,5 +1,5 @@
 ---
-name: Build fedora iso
+name: ISO, fedora
 
 on:
   workflow_dispatch:

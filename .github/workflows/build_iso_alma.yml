@@ -1,5 +1,5 @@
 ---
-name: Build alma iso
+name: ISO, almalinux
 
 on:
   workflow_dispatch:
