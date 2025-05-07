@@ -3,6 +3,11 @@ name: ISO, Fedora
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - kickstart/fedora.ks
+    branches:
+      - main
 
 env:
   URL: https://download.fedoraproject.org/pub/fedora/linux/releases/42/Server/x86_64/iso/Fedora-Server-dvd-x86_64-42-1.1.iso
