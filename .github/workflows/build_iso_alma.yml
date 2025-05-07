@@ -3,6 +3,12 @@ name: ISO, Almalinux
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - kickstart/alma.ks
+      - .github/workflows/build_iso_alma.yml
+    branches:
+      - main
 
 env:
   URL: https://repo.almalinux.org/almalinux/9.5/isos/x86_64/AlmaLinux-9.5-x86_64-minimal.iso

@@ -10,13 +10,14 @@ rootpw --lock
 firewall --enabled --ssh
 selinux --enforcing
 
+ignoredisk --only-use=nvme0n1
+
 bootloader --location=mbr
 zerombr
 clearpart --all --initlabel
-part /boot     --fstype xfs  --size=1024 --label=BOOTFS
-part /boot/efi --fstype vfat --size=1024 --label=EFIFS
-
-part pv.01     --size=100    --grow
+part /boot     --fstype xfs  --ondisk=nvme0n1 --size=1024 --label=BOOTFS
+part /boot/efi --fstype vfat --ondisk=nvme0n1 --size=1024 --label=EFIFS
+part pv.01     --size=100    --ondisk=nvme0n1 --grow
 
 volgroup sysvg --pesize=4096 pv.01
 
