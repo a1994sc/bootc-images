@@ -8,6 +8,4 @@ COPY static/ /
 RUN dnf -y install firewalld policycoreutils-python-utils audit openssh yq && \
   rm -rf /var/{cache,log} /var/lib/{dnf,rhsm}
 
-RUN find /var/lib/selinux/targeted/active/modules -maxdepth 1 -mindepth 1 -type d | xargs -I {} echo "d {} 0755 root root - -" >> /usr/lib/tmpfiles.d/selinux-dir-parent-modules.conf && \
-  find /var/lib/selinux/targeted/active/modules -maxdepth 2 -mindepth 2 -type d | xargs -I {} echo "d {} 0700 root root - -" >> /usr/lib/tmpfiles.d/selinux-dir-modules.conf && \
-  bootc container lint --skip var-tmpfiles
+RUN bootc container lint --skip var-tmpfiles
