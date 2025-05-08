@@ -3,6 +3,8 @@ FROM quay.io/almalinuxorg/almalinux-bootc:9.5-20250429
 COPY static/ /
 
 RUN dnf -y install firewalld policycoreutils-python-utils audit && \
-  dnf -y update && \
-  rm -rf /var/{cache,log} /var/lib/{dnf,rhsm} && \
-  chmod +x /etc/rc.d/rc.local
+  rpm-ostree cleanup --repomd && \
+  dnf clean all && \
+  rm --recursive --force /var/* /tmp/* && \
+  chmod +x /etc/rc.d/rc.local && \
+  bootc container lint
