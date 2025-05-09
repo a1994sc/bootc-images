@@ -37,4 +37,9 @@ user --name=sysadmin --plaintext --password=changeit --groups=wheel
 # a1994sc public ssh keys
 sshkey --username=sysadmin "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBACa5MIyu4mLLLc0D5Y0eOWV1JnvvSo68pDJAh4SyC1WyMVK1eOIlpyDlfFNu7wev8fPELJEwbT+pCsjH2FVU8qRNAH17nW1EBn9xWOX7rEnpxOp6X485+jeA0t/a2jB6e7Bcn86Xwa1tPEbIKS6eo530KMLagaCFpl9arv1SGWeh6/YAw=="
 
+%post
+rm -rf /var/lib/rpm
+ln --symbolic ../../usr/lib/rpm /var/lib/
+%end
+
 reboot --eject
