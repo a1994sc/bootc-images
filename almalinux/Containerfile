@@ -1,8 +1,13 @@
+FROM ghcr.io/mikefarah/yq:4.45.3 AS yq-binary
+
 FROM quay.io/almalinuxorg/almalinux-bootc:9.5-20250429
 
 COPY static/ /
 
-RUN dnf -y install firewalld policycoreutils-python-utils audit && \
+COPY --from=yq-binary /usr/bin/yq /usr/bin/yq
+
+RUN dnf config-manager --enable plus && \
+  dnf -y install firewalld policycoreutils-python-utils audit && \
   rpm-ostree cleanup --repomd && \
   dnf clean all && \
   rm --recursive --force /var/* /tmp/* && \
