@@ -4,7 +4,8 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'almalinux/**'
+      - almalinux/**
+      - .github/workflows/build_bootc_alma.yml
     branches:
       - main
   schedule:
