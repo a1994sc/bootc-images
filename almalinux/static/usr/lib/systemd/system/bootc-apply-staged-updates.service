@@ -5,4 +5,5 @@ ConditionPathExists=/run/ostree-booted
 
 [Service]
 Type=oneshot
+User=root
 ExecStart=/usr/local/bin/automagic.sh
