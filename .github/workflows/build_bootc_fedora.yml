@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - fedora/**
+      - static/**
       - .github/workflows/build_bootc_fedora.yml
     branches:
       - main

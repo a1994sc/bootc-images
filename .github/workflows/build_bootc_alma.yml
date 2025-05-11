@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - almalinux/**
+      - static/**
       - .github/workflows/build_bootc_alma.yml
     branches:
       - main
@@ -55,7 +56,7 @@ jobs:
           tags: latest ${{ steps.tag.outputs.TAG }}
           containerfiles: |
             ./almalinux/Containerfile
-          context: ./almalinux
+          context: ./.
 
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7

@@ -3,7 +3,8 @@ FROM quay.io/fedora/fedora-bootc:42
 # notes:
 #   https://docs.fedoraproject.org/en-US/bootc/building-containers/
 
-COPY static/ /
+COPY static/        /
+COPY fedora/static/ /
 
 RUN dnf -y install firewalld policycoreutils-python-utils audit openssh yq && \
   rpm-ostree cleanup --repomd && \
