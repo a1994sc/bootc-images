@@ -6,4 +6,4 @@ ConditionPathExists=/run/ostree-booted
 [Service]
 Type=oneshot
 User=root
-ExecStart=/usr/local/bin/automagic.sh
+ExecStart=/usr/bin/sh -c "[ \"$(sudo bootc status --format json --format-version 1 | yq -pj -oj -I=0 .status.staged)\" != \"null\" ] && echo \"we should reboot the vm\""
