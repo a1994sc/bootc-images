@@ -67,12 +67,12 @@ jobs:
 
       - name: Re-tag the built image
         run: |-
-          podman tag ${{ steps.build-image.outputs.image }}:latest ghcr.io/${{ steps.build-image.outputs.image }}:latest
-          podman tag ${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }} ghcr.io/${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }}
+          podman tag ${{ steps.build-image.outputs.image }}:latest ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
+          podman tag ${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }} ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }}
 
       - name: Push the built image
         env:
           REGISTRY_AUTH_FILE: /run/containers/0/auth.json
         run: |-
-          podman push --tls-verify ghcr.io/${{ steps.build-image.outputs.image }}:latest
-          podman push --tls-verify ghcr.io/${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }}
+          podman push --tls-verify ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
+          podman push --tls-verify ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }}
