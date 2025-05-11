@@ -19,6 +19,7 @@ jobs:
     permissions:
       packages: write
     env:
+      DISTRO: "almalinux"
       IMAGE_NAME: ${{ github.event.repository.name }}/alma
       REGISTRY: ghcr.io/${{ github.repository_owner }}
     container:
@@ -35,9 +36,9 @@ jobs:
           sha: ${{ github.sha }}
           job: ${{ github.run_number }}
         run: |-
-          echo "TAG=$(cat almalinux/Containerfile | grep -iE "^from.+bootc" | sed -E "s/.+:(.+)/\1/g")-$(echo ${sha:0:8})-$job" >> $GITHUB_OUTPUT
+          echo "TAG=$(cat ${{ env.DISTRO }}/Containerfile | grep -i "${{ env.DISTRO }}" | grep -iE "^from.+bootc" | sed -E "s/.+:(.+)/\1/g")-$(echo $job-${sha:0:8})" >> $GITHUB_OUTPUT
 
-      - name: Get container tools in UBI builder
+      - name: Get container tools into builder
         run: dnf -y install podman buildah skopeo
 
       # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
@@ -55,7 +56,7 @@ jobs:
           image: ${{ env.IMAGE_NAME }}
           tags: latest ${{ steps.tag.outputs.TAG }}
           containerfiles: |
-            ./almalinux/Containerfile
+            ./${{ env.DISTRO }}/Containerfile
           context: ./.
 
       - name: Log in to the GitHub Container registry
@@ -75,5 +76,5 @@ jobs:
         env:
           REGISTRY_AUTH_FILE: /run/containers/0/auth.json
         run: |-
-          podman push --tls-verify ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
-          podman push --tls-verify ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }}
+          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
+          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }}
