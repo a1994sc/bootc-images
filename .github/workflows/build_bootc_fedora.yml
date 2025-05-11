@@ -20,7 +20,7 @@ jobs:
       packages: write
     env:
       DISTRO: "fedora"
-      IMAGE_NAME: ${{ github.event.repository.name }}/${{ github.env.DISTRO }}
+      IMAGE_NAME: ${{ github.event.repository.name }}/fedora
       REGISTRY: ghcr.io/${{ github.repository_owner }}
     container:
       image: quay.io/fedora/fedora:42
@@ -36,7 +36,7 @@ jobs:
           sha: ${{ github.sha }}
           job: ${{ github.run_number }}
         run: |-
-          echo "TAG=$(cat ${{ github.env.DISTRO }}/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$(echo $job-${sha:0:8})" >> $GITHUB_OUTPUT
+          echo "TAG=$(cat ${{ env.DISTRO }}/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$(echo $job-${sha:0:8})" >> $GITHUB_OUTPUT
 
       - name: Get container tools into builder
         run: dnf -y install podman buildah skopeo
@@ -56,7 +56,7 @@ jobs:
           image: ${{ env.IMAGE_NAME }}
           tags: latest ${{ steps.tag.outputs.TAG }}
           containerfiles: |
-            ./${{ github.env.DISTRO }}/Containerfile
+            ./${{ env.DISTRO }}/Containerfile
           context: ./.
 
       - name: Log in to the GitHub Container registry
@@ -76,5 +76,5 @@ jobs:
         env:
           REGISTRY_AUTH_FILE: /run/containers/0/auth.json
         run: |-
-          podman push --tls-verify ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
-          podman push --tls-verify ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }}
+          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
+          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }}
