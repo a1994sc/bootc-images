@@ -4,7 +4,8 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'fedora/**'
+      - fedora/**
+      - .github/workflows/build_bootc_fedora.yml
     branches:
       - main
   schedule:
@@ -64,10 +65,14 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           auth_file_path: /run/containers/0/auth.json
 
-      - name: Push to GitHub Container Repository
-        id: push-to-ghcr
-        uses: redhat-actions/push-to-registry@5ed88d269cf581ea9ef6dd6806d01562096bee9c # v2.8
-        with:
-          image: ${{ steps.build-image.outputs.image }}
-          tags: latest ${{ steps.tag.outputs.TAG }}
-          registry: ${{ env.REGISTRY }}
+      - name: Re-tag the built image
+        run: |-
+          podman tag ${{ steps.build-image.outputs.image }}:latest ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
+          podman tag ${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }} ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }}
+
+      - name: Push the built image
+        env:
+          REGISTRY_AUTH_FILE: /run/containers/0/auth.json
+        run: |-
+          podman push --tls-verify ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
+          podman push --tls-verify ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }}
