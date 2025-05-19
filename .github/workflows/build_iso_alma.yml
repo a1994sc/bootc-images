@@ -20,7 +20,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: quay.io/almalinuxorg/9-base:9.5-20250411
+      image: quay.io/almalinuxorg/9-base:9.5-20250519
       options: --privileged
 
     steps:
