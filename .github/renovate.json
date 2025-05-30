@@ -14,7 +14,8 @@
         "quay.io/fedora/fedora",
         "quay.io/fedora/fedora-bootc"
       ],
-      "enabled": false
+      "enabled": false,
+      "automerge": true
     },
     {
       "matchPackageNames": [
@@ -22,7 +23,8 @@
         "registry.access.redhat.com/ubi9/ubi",
         "quay.io/almalinuxorg/9-base"
       ],
-      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)-(?<patch>\\d+)$"
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)-(?<patch>\\d+)$",
+      "automerge": true
     }
   ],
   "customManagers": [
