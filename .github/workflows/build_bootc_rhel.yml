@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - 'rhel/**'
+      - .github/workflows/build_bootc_rhel.yml
     branches:
       - main
 
@@ -34,7 +35,7 @@ jobs:
           echo "TAG=$(cat rhel/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$(echo ${sha:0:8})-$job" >> $GITHUB_OUTPUT
 
       - name: Get container tools in UBI builder
-        run: dnf -y install podman buildah skopeo
+        run: dnf -y install podman buildah skopeo insights-client
 
       - name: Access a subscription via activation key
         env:
@@ -93,4 +94,6 @@ jobs:
         if: always()
         env:
           SMDEV_CONTAINER_OFF: 1
-        run: subscription-manager unregister
+        run: |-
+          subscription-manager unregister
+          insights-client --unregister
