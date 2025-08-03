@@ -9,6 +9,8 @@ on:
       - .github/workflows/build_bootc_fedora.yml
     branches:
       - main
+    tags:
+      - 'fedora/[0-9]+-[0-9]+'
   schedule:
     - cron: '30 0 * * *'
 
