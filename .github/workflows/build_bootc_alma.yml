@@ -44,7 +44,7 @@ jobs:
       - name: Output version
         id: determine
         run: |-
-          if [[ "${{ steps.git-tag.outputs.TAG }}" != "" ]]; then
+          if [[ "${{ steps.git-tag.outputs.TAG }}" != "''" ]]; then
             echo "version=${{ steps.git-tag.outputs.TAG }}"
             echo "version=${{ steps.git-tag.outputs.TAG }}" >> $GITHUB_OUTPUT
           else
