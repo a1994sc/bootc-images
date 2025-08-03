@@ -22,7 +22,7 @@ jobs:
           use-regex: true
           packages: "${{ github.event.repository.name }}/alma"
           keep-n-tagged: 2
-          tags: "^\\d+\\.(?:\\d+-){3}[a-f0-9]+$"
+          exclude-tags: "^latest$|^\\d+\\.\\d+-\\d+$"
           token: '${{ secrets.GITHUB_TOKEN }}'
 
       - name: Validate images
@@ -45,7 +45,7 @@ jobs:
           use-regex: true
           packages: "${{ github.event.repository.name }}/rhel"
           keep-n-tagged: 2
-          tags: "^\\d+\\.(?:\\d+-){3}[a-f0-9]+$"
+          exclude-tags: "^latest$|^\\d+\\.\\d+-\\d+$"
           token: '${{ secrets.GITHUB_TOKEN }}'
       - name: Validate images
         uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1.0.16
