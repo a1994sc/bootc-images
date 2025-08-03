@@ -8,11 +8,55 @@ on:
       - .github/workflows/build_bootc_rhel.yml
     branches:
       - main
+    tags:
+      - 'rhel/[0-9]+\.[0-9]+-[0-9]+'
+
+env:
+  DISTRO: "rhel"
+  IMAGE_NAME: ${{ github.event.repository.name }}/rhel
+  REGISTRY: ghcr.io/${{ github.repository_owner }}
 
 jobs:
-  subs:
+  info:
+    name: Determine build info
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Determine Build Tag
+        id: tag
+        env:
+          sha: ${{ github.sha }}
+          job: ${{ github.run_number }}
+        run: |-
+          echo "TAG=$(cat ${{ env.DISTRO }}/Containerfile | grep -i "${{ env.DISTRO }}" | grep -iE "^from.+bootc" | sed -E "s/.+:(.+)/\1/g")-$(echo $job-${sha:0:8})" >> $GITHUB_OUTPUT
+      - name: Get Git Tag Info
+        id: git-tag
+        run: |-
+          if ${{ startsWith(github.ref, 'refs/tags/') }}; then
+            echo "tag=$(echo ${{ github.ref }} | sed 's!refs/tags/${{ env.DISTRO }}/!!g')"
+            echo "tag=$(echo ${{ github.ref }} | sed 's!refs/tags/${{ env.DISTRO }}/!!g')" >> $GITHUB_OUTPUT
+          else
+            echo "TAG=''"
+            echo "TAG=''" >> $GITHUB_OUTPUT
+          fi
+      - name: Output version
+        id: determine
+        run: |-
+          if [[ "${{ steps.git-tag.outputs.TAG }}" != "''" ]]; then
+            echo "version=${{ steps.git-tag.outputs.TAG }}"
+            echo "version=${{ steps.git-tag.outputs.TAG }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ steps.tag.outputs.TAG }}"
+            echo "version=${{ steps.tag.outputs.TAG }}" >> $GITHUB_OUTPUT
+          fi
+    outputs:
+      tag: ${{ steps.determine.outputs.version }}
+  build:
     name: Build RHEL bootc image with repo access
     runs-on: ubuntu-latest
+    needs:
+      - info
     permissions:
       packages: write
     env:
@@ -21,32 +65,19 @@ jobs:
     container:
       image: registry.access.redhat.com/ubi9/ubi:9.6-1753978585
       options: --privileged
-
     steps:
       - name: Clone the repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Determine tag
-        id: tag
-        env:
-          sha: ${{ github.sha }}
-          job: ${{ github.run_number }}
-        run: |-
-          echo "TAG=$(cat rhel/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$(echo ${sha:0:8})-$job" >> $GITHUB_OUTPUT
-
       - name: Get container tools in UBI builder
         run: dnf -y install podman buildah skopeo
-
       - name: Access a subscription via activation key
         env:
           SMDEV_CONTAINER_OFF: 1
           orgid: ${{ secrets.RHT_ORGID }}
           activation_key: ${{ secrets.RHT_ACT_KEY }}
         run: subscription-manager register --org=$orgid --activationkey=$activation_key
-
       - name: Install insight-client
         run: dnf -y install insights-client
-
       # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
       - name: Workaround open podman-login action issue
         env:
@@ -54,7 +85,6 @@ jobs:
         run: |
           mkdir -p $HOME/.docker
           echo $auth > $HOME/.docker/config.json
-
       - name: Log in to the RHT terms based registry
         uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
         with:
@@ -62,17 +92,15 @@ jobs:
           username: ${{ secrets.RHT_REG_SVCUSER }}
           password: ${{ secrets.RHT_REG_SVCPASS }}
           auth_file_path: /run/containers/0/auth.json
-
       - name: Use buildah bud to create the image
         id: build-image
         uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2.13
         with:
           image: ${{ env.IMAGE_NAME }}
-          tags: latest ${{ steps.tag.outputs.TAG }}
+          tags: latest ${{ needs.info.outputs.tag }}
           containerfiles: |
-            ./rhel/Containerfile
-          context: ./rhel
-
+            ./${{ env.DISTRO }}/Containerfile
+          context: ./${{ env.DISTRO }}
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
         with:
@@ -80,19 +108,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           auth_file_path: /run/containers/0/auth.json
-
       - name: Re-tag the built image
         run: |-
           podman tag ${{ steps.build-image.outputs.image }}:latest ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
-          podman tag ${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }} ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }}
-
+          podman tag ${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }}
       - name: Push the built image
         env:
           REGISTRY_AUTH_FILE: /run/containers/0/auth.json
         run: |-
-          podman push --tls-verify ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
-          podman push --tls-verify ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ steps.tag.outputs.TAG }}
-
+          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
+          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }}
       - name: Clean up the subscription
         if: always()
         env:
