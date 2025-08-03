@@ -35,7 +35,7 @@ jobs:
           echo "TAG=$(cat rhel/Containerfile | head -1 | sed -E "s/.+:(.+)/\1/g")-$(echo ${sha:0:8})-$job" >> $GITHUB_OUTPUT
 
       - name: Get container tools in UBI builder
-        run: dnf -y install podman buildah skopeo insights-client
+        run: dnf -y install podman buildah skopeo
 
       - name: Access a subscription via activation key
         env:
@@ -43,6 +43,9 @@ jobs:
           orgid: ${{ secrets.RHT_ORGID }}
           activation_key: ${{ secrets.RHT_ACT_KEY }}
         run: subscription-manager register --org=$orgid --activationkey=$activation_key
+
+      - name: Install insight-client
+        run: dnf -y install insights-client
 
       # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
       - name: Workaround open podman-login action issue
