@@ -36,7 +36,7 @@ jobs:
       - name: Get Git Tag Info
         id: git-tag
         run: |-
-          if [[ "${{ github.ref }}" == "refs/tags/*" ]];
+          if [[ "${{ github.ref }}" == "refs/tags/*" ]]; then
             echo "tag=$(echo ${{ github.ref }} | sed 's!refs/tags/almalinux/!!g')" >> $GITHUB_OUTPUT
           else
             echo "TAG=''" >> $GITHUB_OUTPUT
@@ -44,7 +44,7 @@ jobs:
       - name: Output version
         id: determine
         run: |-
-          if [[ "${{ steps.git-tag }}" != "" ]];
+          if [[ "${{ steps.git-tag }}" != "" ]]; then
             echo "version=${{ steps.git-tag }}" >> $GITHUB_OUTPUT
           else
             echo "version=${{ steps.tag }}" >> $GITHUB_OUTPUT
