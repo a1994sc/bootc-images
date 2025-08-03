@@ -10,36 +10,8 @@ on:
   # or manually
   workflow_dispatch:
 jobs:
-  ghcr-cleanup-image:
-    name: ghcr cleanup action
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        packages:
-          - "rhel"
-          - "fedora"
-    steps:
-      - name: Delete old tags
-        uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1.0.16
-        with:
-          packages: "${{ github.event.repository.name }}/${{ matrix.packages }}"
-          keep-n-tagged: 5
-          token: '${{ secrets.GITHUB_TOKEN }}'
-
-      - name: Validate images
-        uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1.0.16
-        with:
-          packages: "${{ github.event.repository.name }}/${{ matrix.packages }}"
-          token: ${{ secrets.GITHUB_TOKEN }}
-          validate: true
-          delete-ghost-images: true
-          delete-orphaned-images: true
-
   ghcr-cleanup-image-alma:
-    name: ghcr cleanup action
+    name: ghcr cleanup action (alma)
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -57,6 +29,50 @@ jobs:
         uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1.0.16
         with:
           packages: "${{ github.event.repository.name }}/alma"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          validate: true
+          delete-ghost-images: true
+          delete-orphaned-images: true
+  ghcr-cleanup-image-rhel:
+    name: ghcr cleanup action (rhel)
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Delete old tags
+        uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1.0.16
+        with:
+          use-regex: true
+          packages: "${{ github.event.repository.name }}/rhel"
+          keep-n-tagged: 2
+          tags: "^\\d+\\.(?:\\d+-){3}[a-f0-9]+$"
+          token: '${{ secrets.GITHUB_TOKEN }}'
+      - name: Validate images
+        uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1.0.16
+        with:
+          packages: "${{ github.event.repository.name }}/rhel"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          validate: true
+          delete-ghost-images: true
+          delete-orphaned-images: true
+  ghcr-cleanup-image-fedora:
+    name: ghcr cleanup action (fedora)
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Delete old tags
+        uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1.0.16
+        with:
+          use-regex: true
+          packages: "${{ github.event.repository.name }}/fedora"
+          keep-n-tagged: 2
+          exclude-tags: "^latest$|^\\d+-\\d+$"
+          token: '${{ secrets.GITHUB_TOKEN }}'
+      - name: Validate images
+        uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1.0.16
+        with:
+          packages: "${{ github.event.repository.name }}/fedora"
           token: ${{ secrets.GITHUB_TOKEN }}
           validate: true
           delete-ghost-images: true
