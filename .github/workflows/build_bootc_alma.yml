@@ -10,7 +10,7 @@ on:
     branches:
       - main
     tags:
-      - 'almalinux/v(9|10|11)\.[0-9]+-[0-9]+'
+      - 'almalinux/v[0-9]+\.[0-9]+-[0-9]+'
   schedule:
     - cron: '15 0 * * *'
 
