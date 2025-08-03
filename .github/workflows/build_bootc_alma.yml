@@ -44,10 +44,12 @@ jobs:
       - name: Output version
         id: determine
         run: |-
-          if [[ "${{ steps.git-tag }}" != "" ]]; then
-            echo "version=${{ steps.git-tag }}" >> $GITHUB_OUTPUT
+          if [[ "${{ steps.git-tag.outputs.TAG }}" != "" ]]; then
+            echo "version=${{ steps.git-tag.outputs.TAG }}"
+            echo "version=${{ steps.git-tag.outputs.TAG }}" >> $GITHUB_OUTPUT
           else
-            echo "version=${{ steps.tag }}" >> $GITHUB_OUTPUT
+            echo "version=${{ steps.tag.outputs.TAG }}"
+            echo "version=${{ steps.tag.outputs.TAG }}" >> $GITHUB_OUTPUT
           fi
     outputs:
       tag: ${{ steps.determine.outputs.version }}
