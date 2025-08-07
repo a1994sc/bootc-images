@@ -63,7 +63,7 @@ jobs:
       IMAGE_NAME: ${{ github.event.repository.name }}/rhel
       REGISTRY: ghcr.io/${{ github.repository_owner }}
     container:
-      image: registry.access.redhat.com/ubi9/ubi:9.6-1754380668
+      image: registry.access.redhat.com/ubi9/ubi:9.6-1754586119
       options: --privileged
     steps:
       - name: Clone the repository
