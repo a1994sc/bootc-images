@@ -1,5 +1,5 @@
 ---
-name: Container, Almalinux
+name: Container, Almalinux, EL9
 on:
   workflow_dispatch:
   push:
@@ -10,7 +10,7 @@ on:
     branches:
       - main
     tags:
-      - 'almalinux/[0-9]+\.[0-9]+-[0-9]+'
+      - 'almalinux/9\.[0-9]+-[0-9]+'
   schedule:
     - cron: '15 0 * * *'
 
@@ -32,7 +32,7 @@ jobs:
           sha: ${{ github.sha }}
           job: ${{ github.run_number }}
         run: |-
-          echo "TAG=$(cat ${{ env.DISTRO }}/Containerfile | grep -i "${{ env.DISTRO }}" | grep -iE "^from.+bootc" | sed -E "s/.+:(.+)/\1/g")-$(echo $job-${sha:0:8})" >> $GITHUB_OUTPUT
+          echo "TAG=$(cat ${{ env.DISTRO }}-el9/Containerfile | grep -i "${{ env.DISTRO }}" | grep -iE "^from.+bootc" | sed -E "s/.+:(.+)/\1/g")-$(echo $job-${sha:0:8})" >> $GITHUB_OUTPUT
       - name: Get Git Tag Info
         id: git-tag
         run: |-
@@ -84,7 +84,7 @@ jobs:
           image: ${{ env.IMAGE_NAME }}
           tags: latest ${{ needs.info.outputs.tag }}
           containerfiles: |
-            ./${{ env.DISTRO }}/Containerfile
+            ./${{ env.DISTRO }}-el9/Containerfile
           context: ./.
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
