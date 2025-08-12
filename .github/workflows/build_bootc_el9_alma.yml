@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - almalinux/**
+      - almalinux-el9/**
       - static/**
-      - .github/workflows/build_bootc_alma.yml
+      - .github/workflows/build_bootc_el9_alma.yml
     branches:
       - main
     tags:
