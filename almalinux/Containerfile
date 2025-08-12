@@ -7,8 +7,7 @@ COPY almalinux/static/ /
 
 COPY --from=yq-binary /usr/bin/yq /usr/bin/yq
 
-RUN dnf config-manager --enable plus && \
-  dnf -y install firewalld policycoreutils-python-utils audit && \
+RUN dnf -y install firewalld policycoreutils-python-utils audit && \
   rpm-ostree cleanup --repomd && \
   dnf clean all && \
   rm --recursive --force /var/* /tmp/* && \
