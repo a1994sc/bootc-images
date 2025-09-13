@@ -111,14 +111,14 @@ jobs:
           auth_file_path: /run/containers/0/auth.json
       - name: Re-tag the built image
         run: |-
-          podman tag ${{ steps.build-image.outputs.image }}:latest ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
-          podman tag ${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }}
+          podman tag ${{ steps.build-image.outputs.image }}:latest                        ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}9:latest
+          podman tag ${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}9:${{ needs.info.outputs.tag }}
       - name: Push the built image
         env:
           REGISTRY_AUTH_FILE: /run/containers/0/auth.json
         run: |-
-          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
-          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }}
+          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}9:latest
+          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}9:${{ needs.info.outputs.tag }}
       - name: Clean up the subscription
         if: always()
         env:

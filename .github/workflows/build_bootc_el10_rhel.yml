@@ -78,9 +78,6 @@ jobs:
           activation_key: ${{ secrets.RHT_ACT_KEY }}
         run: |-
           subscription-manager register --org=$orgid --activationkey=$activation_key
-      - name: Install insight-client
-        run: |-
-          dnf -y install insights-client
       # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
       - name: Workaround open podman-login action issue
         env:
@@ -114,14 +111,14 @@ jobs:
           auth_file_path: /run/containers/0/auth.json
       - name: Re-tag the built image
         run: |-
-          podman tag ${{ steps.build-image.outputs.image }}:latest ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
-          podman tag ${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }}
+          podman tag ${{ steps.build-image.outputs.image }}:latest                        ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}10:latest
+          podman tag ${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}10:${{ needs.info.outputs.tag }}
       - name: Push the built image
         env:
           REGISTRY_AUTH_FILE: /run/containers/0/auth.json
         run: |-
-          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:latest
-          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }}
+          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}10:latest
+          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}10:${{ needs.info.outputs.tag }}
       - name: Clean up the subscription
         if: always()
         env:
@@ -129,10 +126,3 @@ jobs:
         continue-on-error: true
         run: |-
           subscription-manager unregister
-      - name: Clean up the subscription, insight
-        if: always()
-        env:
-          SMDEV_CONTAINER_OFF: 1
-        continue-on-error: true
-        run: |-
-          insights-client --unregister

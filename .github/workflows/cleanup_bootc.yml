@@ -12,12 +12,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        major:
+          - "9"
+          - "10"
     steps:
       - name: Delete old tags
         uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1.0.16
         with:
           use-regex: true
-          packages: "${{ github.event.repository.name }}/alma"
+          packages: "${{ github.event.repository.name }}/alma${{ matrix.major }}"
           keep-n-tagged: 2
           exclude-tags: "^latest$|^\\d+\\.\\d+-\\d+$"
           token: '${{ secrets.GITHUB_TOKEN }}'
@@ -25,7 +31,7 @@ jobs:
       - name: Validate images
         uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1.0.16
         with:
-          packages: "${{ github.event.repository.name }}/alma"
+          packages: "${{ github.event.repository.name }}/alma${{ matrix.major }}"
           token: ${{ secrets.GITHUB_TOKEN }}
           validate: true
           delete-ghost-images: true
@@ -35,19 +41,25 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        major:
+          - "9"
+          - "10"
     steps:
       - name: Delete old tags
         uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1.0.16
         with:
           use-regex: true
-          packages: "${{ github.event.repository.name }}/rhel"
+          packages: "${{ github.event.repository.name }}/rhel${{ matrix.major }}"
           keep-n-tagged: 2
           exclude-tags: "^latest$|^\\d+\\.\\d+-\\d+$"
           token: '${{ secrets.GITHUB_TOKEN }}'
       - name: Validate images
         uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4 # v1.0.16
         with:
-          packages: "${{ github.event.repository.name }}/rhel"
+          packages: "${{ github.event.repository.name }}/rhel${{ matrix.major }}"
           token: ${{ secrets.GITHUB_TOKEN }}
           validate: true
           delete-ghost-images: true
