@@ -1,5 +1,5 @@
 ---
-name: Container, RHEL, EL9
+name: Container, RHEL, EL10
 on:
   workflow_dispatch:
   push:
@@ -77,8 +77,6 @@ jobs:
           orgid: ${{ secrets.RHT_ORGID }}
           activation_key: ${{ secrets.RHT_ACT_KEY }}
         run: subscription-manager register --org=$orgid --activationkey=$activation_key
-      - name: Install insight-client
-        run: dnf -y install insights-client
       # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
       - name: Workaround open podman-login action issue
         env:
@@ -124,6 +122,6 @@ jobs:
         if: always()
         env:
           SMDEV_CONTAINER_OFF: 1
+        continue-on-error: true
         run: |-
           subscription-manager unregister
-          insights-client --unregister
