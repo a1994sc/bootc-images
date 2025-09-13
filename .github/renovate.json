@@ -27,22 +27,22 @@
       "versioning": "regex:^(?<major>9)\\.(?<minor>\\d+)-(?<patch>\\d+)$",
       "automerge": true,
       "matchFileNames": [
-        "almalinux-el9/**",
-        "rhel-el9/**"
+        "el09/**",
+        ".github/workflows/build_bootc_el09**"
       ]
     },
     {
       "matchPackageNames": [
         "registry.redhat.io/rhel10/rhel-bootc",
-        "registry.access.redhat.com/ubi9/ubi",
+        "registry.access.redhat.com/ubi10/ubi",
         "quay.io/almalinuxorg/10-base",
         "quay.io/almalinuxorg/almalinux-bootc"
       ],
       "versioning": "regex:^(?<major>10)\\.(?<minor>\\d+)-(?<patch>\\d+)$",
       "automerge": true,
       "matchFileNames": [
-        "almalinux-el10/**",
-        "rhel-el10/**"
+        "el10/**",
+        ".github/workflows/build_bootc_el10**"
       ]
     }
   ],
