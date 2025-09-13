@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - almalinux-el9/**
+      - el09/almalinux/**
       - static/**
-      - .github/workflows/build_bootc_el9_alma.yml
+      - .github/workflows/build_bootc_el09_alma.yml
     branches:
       - main
     tags:
@@ -83,8 +83,8 @@ jobs:
         with:
           image: ${{ env.IMAGE_NAME }}
           tags: latest ${{ needs.info.outputs.tag }}
-          containerfiles: |
-            ./${{ env.DISTRO }}-el9/Containerfile
+          containerfiles: |-
+            el09/${{ env.DISTRO }}/Containerfile
           context: ./.
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7

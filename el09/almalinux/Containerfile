@@ -2,8 +2,8 @@ FROM ghcr.io/mikefarah/yq:4.47.2 AS yq-binary
 
 FROM quay.io/almalinuxorg/almalinux-bootc:9.6-20250906
 
-COPY static/           /
-COPY almalinux-el9/static/ /
+COPY static/                /
+COPY el09/almalinux/static/ /
 
 COPY --from=yq-binary /usr/bin/yq /usr/bin/yq
 
