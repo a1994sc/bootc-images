@@ -70,7 +70,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Get container tools into builder
         run: |-
-          dnf -y install podman buildah skopeo
+          dnf -y install podman buildah skopeo fuse-overlayfs
       - name: Debug
         run: |-
           podman --log-level=debug ps -a
