@@ -69,7 +69,11 @@ jobs:
       - name: Clone the repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: Get container tools into builder
-        run: dnf -y install podman buildah skopeo
+        run: |-
+          dnf -y install podman buildah skopeo
+      - name: Debug
+        run: |-
+          podman --log-level=debug ps -a
       # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
       - name: Workaround open podman-login action issue
         env:
