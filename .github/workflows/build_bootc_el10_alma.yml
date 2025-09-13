@@ -149,7 +149,8 @@ jobs:
         continue-on-error: true
         run: |-
           docker buildx imagetools create \
-            --tags="ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}10:${{ needs.info.outputs.tag }}"
+            --tag="ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}10:${{ needs.info.outputs.tag }}" \
+            --tag="ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}10:latest" \
             --annotation='index:org.opencontainers.image.description=${{ github.event.repository.description }}' \
             --annotation='index:org.opencontainers.image.created=${{ steps.timestamp.outputs.timestamp }}' \
             --annotation='index:org.opencontainers.image.url=${{ github.event.repository.url }}' \
