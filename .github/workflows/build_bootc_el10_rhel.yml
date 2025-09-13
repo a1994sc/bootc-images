@@ -125,3 +125,10 @@ jobs:
         continue-on-error: true
         run: |-
           subscription-manager unregister
+      - name: Clean up the subscription, insight
+        if: always()
+        env:
+          SMDEV_CONTAINER_OFF: 1
+        continue-on-error: true
+        run: |-
+          insights-client --unregister
