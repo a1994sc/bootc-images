@@ -8,3 +8,7 @@ checksums.txt
 
 # Kickstart folder
 bootiso
+
+# tar balls
+*.tar
+*.tar.zst
