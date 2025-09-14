@@ -16,6 +16,7 @@ on:
 
 env:
   DISTRO: "almalinux"
+  MAJOR: "10"
   IMAGE_NAME: ${{ github.event.repository.name }}/alma
   REGISTRY: ghcr.io/${{ github.repository_owner }}
 
@@ -111,13 +112,13 @@ jobs:
 
       - name: Re-tag the built image
         run: |-
-          podman tag ${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}10:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
+          podman tag ${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
 
       - name: Push the built image
         env:
           REGISTRY_AUTH_FILE: /run/containers/0/auth.json
         run: |-
-          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}10:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
+          podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
     outputs:
       image: ${{ steps.build-image.outputs.image }}
 
@@ -143,7 +144,7 @@ jobs:
       - name: Create manifest list and pushes
         run: |-
           docker buildx imagetools create \
-            --tag="ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}10:${{ needs.info.outputs.tag }}" \
-            --tag="ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}10:latest" \
-            ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}10:${{ needs.info.outputs.tag }}-amd64 \
-            ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}10:${{ needs.info.outputs.tag }}-arm64
+            --tag="ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}" \
+            --tag="ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}${{ env.MAJOR }}:latest" \
+            ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-amd64 \
+            ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-arm64
