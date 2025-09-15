@@ -1,0 +1,44 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/zarf-dev/zarf/main/zarf.schema.json
+kind: ZarfPackageConfig
+metadata:
+  name: el09-alma
+components:
+  - name: enterprise-linux
+    only:
+      flavor: bootc
+    images:
+      - ghcr.io/a1994sc/bootc-images/alma9:latest
+  - name: enterprise-linux
+    only:
+      flavor: rpm
+    files:
+      - source: rpm/
+        target: /var/lib/pkg
+      - source: files/zarf.repo
+        target: /etc/yum.repos.d/zarf.repo
+      - source: files/RPM-GPG-KEY-AlmaLinux-9
+        target: /etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux-9
+    actions:
+      onCreate:
+        before:
+          - description: pull latest packages
+            cmd: |-
+              dnf group install \
+                core standard smart-card \
+                --releasever 9 \
+                --assumeyes \
+                --downloadonly \
+                --destdir rpm \
+                --installroot /workspace/el09/almalinux/rpm \
+                --nodocs \
+                --refresh
+              rm -rf /workspace/el09/almalinux/rpm/var
+          - description: create local repo
+            cmd: |-
+              createrepo rpm
+      onDeploy:
+        before:
+          - description: clear out existing cache
+            cmd: |-
+              rm -rf /var/lib/pkg
