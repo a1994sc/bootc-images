@@ -149,7 +149,7 @@ jobs:
   merge:
     # section pulled from:
     # https://github.com/sredevopsorg/multi-arch-docker-github-workflow/blob/56f5fbaa1757d3e330547bed67e61d084130d69d/.github/workflows/multi-build.yaml#L185
-    name: Marge multi-arch
+    name: Merge multi-arch
     runs-on: ubuntu-latest
     needs:
       - info
