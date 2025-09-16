@@ -160,7 +160,7 @@ jobs:
       matrix:
         platform:
           - amd64
-          # - arm64
+          - arm64
         flavor:
           - rpm
           - bootc
@@ -186,3 +186,7 @@ jobs:
             --confirm \
             --flavor ${{ matrix.flavor }} \
             --set version=${{ needs.info.outputs.tag }}
+
+      - name: Publish Zarf package
+        run: |-
+          zarf package publish zarf-*.zst oci://ghcr.io/${{ github.repository_owner }}/zarf
