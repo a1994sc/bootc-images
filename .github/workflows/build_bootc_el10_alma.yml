@@ -170,6 +170,8 @@ jobs:
       image: quay.io/almalinuxorg/10-base:10.0-20250909
       volumes:
         - /home/runner/work/_temp/:/workspace
+      options: |-
+        --workdir /workspace
     defaults:
       run:
         working-directory: /workspace
