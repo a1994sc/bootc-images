@@ -148,3 +148,40 @@ jobs:
             --tag="ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}${{ env.MAJOR }}:latest" \
             ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-amd64 \
             ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-arm64
+
+  zarf:
+    name: Build zarf packages
+    runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || matrix.platform == 'arm64' && 'ubuntu-24.04-arm' }}
+    needs:
+      - info
+      - merge
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - amd64
+          # - arm64
+        flavor:
+          # - rpm
+          - bootc
+    permissions:
+      packages: write
+    container:
+      image: quay.io/almalinuxorg/10-base:10.0-20250909
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Install The Latest Release Version of Zarf
+        uses: zarf-dev/setup-zarf@10e539efed02f75ec39eb8823e22a5c795f492ae # v1.0.1
+
+      - name: Get working directory
+        run: |-
+          echo $PWD
+
+      # - name: Package Zarf package
+      #   run: |-
+      #     zarf package create \
+      #       --confirm el09/almalinux \
+      #       --flavor ${{ matrix.flavor }} \
+      #       --set version=${{ needs.info.outputs.tag }}
