@@ -168,13 +168,6 @@ jobs:
       packages: write
     container:
       image: quay.io/almalinuxorg/10-base:10.0-20250909
-      volumes:
-        - /home/runner/work/_temp/:/workspace
-      options: |-
-        --workdir /workspace
-    defaults:
-      run:
-        working-directory: /workspace
     steps:
       - name: Get container tools into builder
         run: |-
@@ -189,7 +182,7 @@ jobs:
       - name: Package Zarf package
         run: |-
           zarf package create \
-            /workspace/el10/${{ env.DISTRO }} \
+            el10/${{ env.DISTRO }} \
             --confirm \
             --flavor ${{ matrix.flavor }} \
             --set version=${{ needs.info.outputs.tag }}
