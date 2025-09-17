@@ -171,7 +171,15 @@ jobs:
     steps:
       - name: Get container tools into builder
         run: |-
-          dnf -y install createrepo
+          dnf -y install createrepo yum-utils
+
+      - name: Configure docker repo
+        run: |-
+          yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+      - name: Install docker
+        run: |-
+           dnf -y install docker-ce docker-ce-cli containerd.io
 
       - name: Clone the repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
