@@ -12,3 +12,6 @@ bootiso
 # tar balls
 *.tar
 *.tar.zst
+*.rpm
+var/
+repodata/

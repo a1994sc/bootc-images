@@ -10,7 +10,7 @@ on:
       - main
 
 env:
-  URL: https://repo.almalinux.org/almalinux/9.5/isos/x86_64/AlmaLinux-9.5-x86_64-minimal.iso
+  URL: https://repo.almalinux.org/almalinux/9.6/isos/x86_64/AlmaLinux-9.6-x86_64-minimal.iso
 
 # credit:
 # https://dailystuff.nl/blog/2023/create-a-kickstart-iso#manual-procedure
