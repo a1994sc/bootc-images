@@ -6,11 +6,13 @@ metadata:
   version: "###ZARF_PKG_TMPL_VERSION###"
 components:
   - name: enterprise-linux
+    required: true
     only:
       flavor: bootc
     images:
       - ghcr.io/a1994sc/bootc-images/alma10:latest
   - name: enterprise-linux
+    required: true
     only:
       flavor: rpm
     files:

@@ -12,7 +12,7 @@ on:
     tags:
       - 'almalinux/9\.[0-9]+-[0-9]+'
   schedule:
-    - cron: '15 0 * * *'
+    - cron: '15 0 * * 0'
 
 env:
   DISTRO: "almalinux"
@@ -137,3 +137,60 @@ jobs:
             --tag="ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}${{ env.MAJOR }}:latest" \
             ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-amd64 \
             ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-arm64
+
+  zarf:
+    name: Build zarf packages
+    runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || matrix.platform == 'arm64' && 'ubuntu-24.04-arm' }}
+    needs:
+      - info
+      - merge
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - amd64
+          - arm64
+        flavor:
+          - rpm
+          - bootc
+    permissions:
+      packages: write
+    container:
+      image: quay.io/almalinuxorg/9-base:9.6-20250909
+    steps:
+      - name: Get container tools into builder
+        run: |-
+          dnf -y install createrepo yum-utils
+
+      - name: Configure docker repo
+        run: |-
+          yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+
+      - name: Install docker
+        run: |-
+           dnf -y install docker-ce docker-ce-cli containerd.io
+
+      - name: Clone the repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Install The Latest Release Version of Zarf
+        uses: zarf-dev/setup-zarf@10e539efed02f75ec39eb8823e22a5c795f492ae # v1.0.1
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@184bdaa0721073962dff0199f1fb9940f07167d1 # v3.5.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package Zarf package
+        run: |-
+          zarf package create \
+            el09/${{ env.DISTRO }} \
+            --confirm \
+            --flavor ${{ matrix.flavor }} \
+            --set version=${{ needs.info.outputs.tag }}
+
+      - name: Publish Zarf package
+        run: |-
+          zarf package publish zarf-*.zst oci://ghcr.io/${{ github.repository_owner }}/zarf
