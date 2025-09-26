@@ -61,6 +61,8 @@
               pkgs.cdrtools
               pkgs.isomd5sum
               pkgs.p7zip
+              pkgs.oras
+              pkgs.rpm
             ];
           };
           formatter = fmt.config.build.wrapper;
