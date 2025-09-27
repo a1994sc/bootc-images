@@ -17,7 +17,8 @@ on:
 env:
   DISTRO: "almalinux"
   MAJOR: "10"
-  IMAGE_NAME: ${{ github.event.repository.name }}/alma
+  IMAGE_NAME: ${{ github.event.repository.name }}/bootc/alma
+  IMAGE_RPM_NAME: ${{ github.event.repository.name }}/rpm/alma
   REGISTRY: ghcr.io/${{ github.repository_owner }}
 
 jobs:
