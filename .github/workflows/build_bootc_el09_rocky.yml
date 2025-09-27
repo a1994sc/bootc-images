@@ -139,13 +139,16 @@ jobs:
       options: --privileged
     steps:
       - name: Get container tools into builder
-        run: dnf -y install podman createrepo
+        shell: /bin/bash
+        run: |-
+          dnf -y install podman createrepo
 
       - name: Install oras tool
         uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
 
       # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
       - name: Workaround open podman-login action issue
+        shell: /bin/bash
         env:
           auth: "{ \"auths\": {} }"
         run: |
@@ -165,6 +168,7 @@ jobs:
           mkdir -p /root/rpm
 
       - name: Download packages
+        shell: /bin/bash
         run: |-
           dnf group install \
             core standard \
@@ -180,6 +184,7 @@ jobs:
           createrepo /root/rpm
 
       - name: Upload to ghcr
+        shell: /bin/bash
         working-directory: /root/rpm
         run: |-
           find /root/rpm -type f | sed 's#/root/rpm/##g' | \
