@@ -18,6 +18,7 @@ env:
   DISTRO: "almalinux"
   MAJOR: "9"
   IMAGE_NAME: ${{ github.event.repository.name }}/alma
+  IMAGE_RPM_NAME: ${{ github.event.repository.name }}/rpm/alma
   REGISTRY: ghcr.io/${{ github.repository_owner }}
 
 jobs:
@@ -210,7 +211,7 @@ jobs:
         working-directory: /root/rpm
         run: |-
           find /root/rpm -type f | sed 's#/root/rpm/##g' | \
-            awk 'BEGIN {printf "oras push --registry-config /run/containers/0/auth.json --no-tty ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}"} {printf " %s:application/vnd.adrp.rpm.v1 ", $0} END{print ""}' | \
+            awk 'BEGIN {printf "oras push --registry-config /run/containers/0/auth.json --no-tty ghcr.io/${{ env.IMAGE_RPM_NAME }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}"} {printf " %s:application/vnd.adrp.rpm.v1 ", $0} END{print ""}' | \
             xargs -I {} sh -c "eval {}"
     outputs:
       tag: ${{ needs.info.outputs.tag }}
@@ -223,8 +224,8 @@ jobs:
     needs:
       - build-rpm
     steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - name: Install oras tool
+        uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
 
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
@@ -235,11 +236,8 @@ jobs:
 
       - name: Create manifest list and pushes
         run: |-
-          docker buildx imagetools create \
-            --tag="ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}:${{ needs.build-rpm.outputs.tag }}" \
-            --tag="ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}::latest" \
-            ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}:${{ needs.build-rpm.outputs.tag }}-amd64 \
-            ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}:${{ needs.build-rpm.outputs.tag }}-arm64
+          oras manifest index create ghcr.io/${{ env.IMAGE_RPM_NAME }}${{ env.MAJOR }}:latest ${{ needs.build-rpm.outputs.tag }}-amd64 ${{ needs.build-rpm.outputs.tag }}-arm64
+          oras manifest index create ghcr.io/${{ env.IMAGE_RPM_NAME }}${{ env.MAJOR }}:${{ needs.build-rpm.outputs.tag }} ${{ needs.build-rpm.outputs.tag }}-amd64 ${{ needs.build-rpm.outputs.tag }}-arm64
     outputs:
       tag: ${{ needs.build-rpm.outputs.tag }}
 
@@ -248,7 +246,7 @@ jobs:
     runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || matrix.platform == 'arm64' && 'ubuntu-24.04-arm' }}
     needs:
       - merge-bootc
-      - merge-bootc
+      - merge-rpm
     strategy:
       fail-fast: false
       matrix:
