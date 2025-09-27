@@ -178,13 +178,14 @@ jobs:
             --nodocs \
             --refresh
           rm -rf /root/rpm/var
+          rm -rf /root/rpm/usr
           createrepo /root/rpm
 
       - name: Upload to ghcr
         working-directory: /root/rpm
         run: |-
           find /root/rpm -type f | sed 's#/root/rpm/##g' | \
-            awk 'BEGIN {printf "oras push --artifact-platform \"linux/${{ matrix.platform }}\" --registry-config /run/containers/0/auth.json --no-tty ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma9:${{ needs.info.outputs.tag }}-${{ matrix.platform }}"} {printf " %s:application/vnd.adrp.rpm.v1 ", $0} END{print ""}' | \
+            awk 'BEGIN {printf "oras push --artifact-platform \"linux/${{ matrix.platform }}\" --registry-config /run/containers/0/auth.json --no-tty ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}"} {printf " %s:application/vnd.adrp.rpm.v1 ", $0} END{print ""}' | \
             xargs -I {} sh -c "eval {}"
     outputs:
       tag: ${{ needs.info.outputs.tag }}
