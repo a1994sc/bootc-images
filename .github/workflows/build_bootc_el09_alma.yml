@@ -176,6 +176,14 @@ jobs:
           mkdir -p /root/.docker
           echo $auth > /root/.docker/config.json
 
+      - name: Log in to the GitHub Container registry
+        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          auth_file_path: /root/.docker/config.json
+
       - name: Create workspace
         run: |-
           mkdir -p /root/rpm
@@ -198,7 +206,7 @@ jobs:
         working-directory: /root/rpm
         run: |-
           find /root/rpm -type f | sed 's#/root/rpm/##g' | \
-            awk 'BEGIN {printf "oras push --no-tty ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}"} {printf " %s:application/vnd.adrp.rpm.v1 ", $0} END{print ""}' | \
+            awk 'BEGIN {printf "oras push --registry-config /root/.docker/config.json --no-tty ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}"} {printf " %s:application/vnd.adrp.rpm.v1 ", $0} END{print ""}' | \
             xargs -I {} sh -c "eval {}"
 
   merge-rpm:
