@@ -168,7 +168,7 @@ jobs:
       - name: Download packages
         run: |-
           dnf group install \
-            core standard smart-card \
+            core standard \
             --releasever ${{ env.MAJOR }} \
             --assumeyes \
             --downloadonly \
@@ -224,7 +224,7 @@ jobs:
 
   zarf:
     name: Build zarf packages
-    runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || matrix.platform == 'arm64' && 'ubuntu-24.04-arm' }}
+    runs-on: ubuntu-latest
     needs:
       - merge
     strategy:
@@ -238,21 +238,7 @@ jobs:
           - bootc
     permissions:
       packages: write
-    container:
-      image: quay.io/almalinuxorg/9-base:9.6-20250909
     steps:
-      - name: Get container tools into builder
-        run: |-
-          dnf -y install createrepo yum-utils
-
-      - name: Configure docker repo
-        run: |-
-          yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-
-      - name: Install docker
-        run: |-
-           dnf -y install docker-ce docker-ce-cli containerd.io
-
       - name: Clone the repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
@@ -270,10 +256,11 @@ jobs:
         run: |-
           zarf package create \
             el09/${{ env.DISTRO }} \
+            --architecture ${{ matrix.platform }} \
             --confirm \
             --flavor ${{ matrix.flavor }} \
             --set version=${{ needs.merge.outputs.tag }}
 
       - name: Publish Zarf package
         run: |-
-          zarf package publish zarf-*.zst oci://ghcr.io/${{ github.repository_owner }}/zarf
+          zarf package publish zarf-*.zst oci://ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/zarf
