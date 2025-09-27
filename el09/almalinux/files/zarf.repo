@@ -1,6 +1,0 @@
-[zarf-minimal]
-name=Zarf offline cache - Alamalinux 9
-baseurl=file:///var/lib/pkg
-gpgcheck=1
-enabled=1
-gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-AlmaLinux-9
