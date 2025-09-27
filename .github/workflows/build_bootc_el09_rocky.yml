@@ -139,7 +139,7 @@ jobs:
       options: --privileged
     steps:
       - name: Get container tools into builder
-        shell: /bin/bash
+        shell: bash
         run: |-
           dnf -y install podman createrepo
 
@@ -148,7 +148,7 @@ jobs:
 
       # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
       - name: Workaround open podman-login action issue
-        shell: /bin/bash
+        shell: bash
         env:
           auth: "{ \"auths\": {} }"
         run: |
@@ -168,7 +168,7 @@ jobs:
           mkdir -p /root/rpm
 
       - name: Download packages
-        shell: /bin/bash
+        shell: bash
         run: |-
           dnf group install \
             core standard \
@@ -184,7 +184,7 @@ jobs:
           createrepo /root/rpm
 
       - name: Upload to ghcr
-        shell: /bin/bash
+        shell: bash
         working-directory: /root/rpm
         run: |-
           find /root/rpm -type f | sed 's#/root/rpm/##g' | \
