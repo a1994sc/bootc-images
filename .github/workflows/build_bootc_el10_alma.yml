@@ -60,11 +60,10 @@ jobs:
     outputs:
       tag: ${{ steps.determine.outputs.version }}
 
-  build:
+  build-bootc:
     name: Build bootc image
     runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || matrix.platform == 'arm64' && 'ubuntu-24.04-arm' }}
     strategy:
-      fail-fast: false
       matrix:
         platform:
           - amd64
@@ -81,8 +80,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
       - name: Get container tools into builder
-        run: |-
-          dnf -y install podman buildah skopeo fuse-overlayfs
+        run: dnf -y install podman buildah skopeo
 
       # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
       - name: Workaround open podman-login action issue
@@ -98,8 +96,8 @@ jobs:
         with:
           image: ${{ env.IMAGE_NAME }}
           tags: latest ${{ needs.info.outputs.tag }}
-          containerfiles: |
-            ./el10/${{ env.DISTRO }}/Containerfile
+          containerfiles: |-
+            el10/${{ env.DISTRO }}/Containerfile
           context: ./.
 
       - name: Log in to the GitHub Container registry
@@ -121,18 +119,89 @@ jobs:
           podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
     outputs:
       image: ${{ steps.build-image.outputs.image }}
+      tag: ${{ needs.info.outputs.tag }}
 
-  merge:
-    # section pulled from:
-    # https://github.com/sredevopsorg/multi-arch-docker-github-workflow/blob/56f5fbaa1757d3e330547bed67e61d084130d69d/.github/workflows/multi-build.yaml#L185
-    name: Merge multi-arch
-    runs-on: ubuntu-latest
+  build-rpm:
+    name: Build rpm oci artifact
+    runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || matrix.platform == 'arm64' && 'ubuntu-24.04-arm' }}
+    strategy:
+      matrix:
+        platform:
+          - amd64
+          - arm64
     needs:
       - info
-      - build
+    permissions:
+      packages: write
+    container:
+      image: quay.io/almalinuxorg/10-base:10.0-20250909
+      # needed for login to ghcr
+      options: --privileged
     steps:
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - name: Get container tools into builder
+        run: dnf -y install podman createrepo
+
+      - name: Install oras tool
+        uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
+
+      # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
+      - name: Workaround open podman-login action issue
+        env:
+          auth: "{ \"auths\": {} }"
+        run: |
+          mkdir -p $HOME/.docker
+          echo $auth > $HOME/.docker/config.json
+
+      - name: Log in to the GitHub Container registry
+        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          auth_file_path: /run/containers/0/auth.json
+
+      - name: Create workspace
+        run: |-
+          mkdir -p /root/rpm
+
+      - name: Download packages
+        run: |-
+          dnf group install \
+            core standard \
+            --releasever ${{ env.MAJOR }} \
+            --assumeyes \
+            --downloadonly \
+            --destdir /root/rpm \
+            --installroot /root/rpm \
+            --nodocs \
+            --refresh
+          rm -rf /root/rpm/var
+          createrepo /root/rpm
+
+      - name: Upload to ghcr
+        working-directory: /root/rpm
+        run: |-
+          find /root/rpm -type f | sed 's#/root/rpm/##g' | \
+            awk 'BEGIN {printf "oras push --artifact-platform \"linux/${{ matrix.platform }}\" --registry-config /run/containers/0/auth.json --no-tty ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma9:${{ needs.info.outputs.tag }}-${{ matrix.platform }}"} {printf " %s:application/vnd.adrp.rpm.v1 ", $0} END{print ""}' | \
+            xargs -I {} sh -c "eval {}"
+    outputs:
+      tag: ${{ needs.info.outputs.tag }}
+
+  merge:
+    name: Merge artifacts arch
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        artifact:
+          - "bootc"
+          - "rpm"
+    needs:
+      - build-bootc
+      - build-rpm
+    steps:
+      - name: Install oras tool
+        uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
 
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
@@ -143,17 +212,19 @@ jobs:
 
       - name: Create manifest list and pushes
         run: |-
-          docker buildx imagetools create \
-            --tag="ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}" \
-            --tag="ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}${{ env.MAJOR }}:latest" \
-            ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-amd64 \
-            ghcr.io/${{ github.repository_owner }}/${{ needs.build.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-arm64
+          oras manifest index create \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/alma${{ env.MAJOR }}:latest \
+            ${{ needs.build-bootc.outputs.tag }}-amd64 ${{ needs.build-bootc.outputs.tag }}-arm64
+          oras manifest index create \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/alma${{ env.MAJOR }}:${{ needs.build-bootc.outputs.tag }} \
+            ${{ needs.build-bootc.outputs.tag }}-amd64 ${{ needs.build-bootc.outputs.tag }}-arm64
+    outputs:
+      tag: ${{ needs.build-bootc.outputs.tag }}
 
   zarf:
     name: Build zarf packages
-    runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || matrix.platform == 'arm64' && 'ubuntu-24.04-arm' }}
+    runs-on: ubuntu-latest
     needs:
-      - info
       - merge
     strategy:
       fail-fast: false
@@ -166,21 +237,7 @@ jobs:
           - bootc
     permissions:
       packages: write
-    container:
-      image: quay.io/almalinuxorg/10-base:10.0-20250909
     steps:
-      - name: Get container tools into builder
-        run: |-
-          dnf -y install createrepo yum-utils
-
-      - name: Configure docker repo
-        run: |-
-          yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-
-      - name: Install docker
-        run: |-
-           dnf -y install docker-ce docker-ce-cli containerd.io
-
       - name: Clone the repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
@@ -198,10 +255,11 @@ jobs:
         run: |-
           zarf package create \
             el10/${{ env.DISTRO }} \
+            --architecture ${{ matrix.platform }} \
             --confirm \
             --flavor ${{ matrix.flavor }} \
-            --set version=${{ needs.info.outputs.tag }}
+            --set version=${{ needs.merge.outputs.tag }}
 
       - name: Publish Zarf package
         run: |-
-          zarf package publish zarf-*.zst oci://ghcr.io/${{ github.repository_owner }}/zarf
+          zarf package publish zarf-*.zst oci://ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/zarf
