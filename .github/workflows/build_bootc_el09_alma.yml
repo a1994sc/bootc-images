@@ -119,6 +119,7 @@ jobs:
           podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
     outputs:
       image: ${{ steps.build-image.outputs.image }}
+      tag: ${{ needs.info.outputs.tag }}
 
   merge-bootc:
     # section pulled from:
@@ -126,7 +127,6 @@ jobs:
     name: Merge multi-arch bootc
     runs-on: ubuntu-latest
     needs:
-      - info
       - build-bootc
     steps:
       - name: Set up Docker Buildx
@@ -142,10 +142,12 @@ jobs:
       - name: Create manifest list and pushes
         run: |-
           docker buildx imagetools create \
-            --tag="ghcr.io/${{ github.repository_owner }}/${{ needs.build-bootc.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}" \
+            --tag="ghcr.io/${{ github.repository_owner }}/${{ needs.build-bootc.outputs.image }}${{ env.MAJOR }}:${{ needs.build-bootc.outputs.tag }}" \
             --tag="ghcr.io/${{ github.repository_owner }}/${{ needs.build-bootc.outputs.image }}${{ env.MAJOR }}:latest" \
-            ghcr.io/${{ github.repository_owner }}/${{ needs.build-bootc.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-amd64 \
-            ghcr.io/${{ github.repository_owner }}/${{ needs.build-bootc.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-arm64
+            ghcr.io/${{ github.repository_owner }}/${{ needs.build-bootc.outputs.image }}${{ env.MAJOR }}:${{ needs.build-bootc.outputs.tag }}-amd64 \
+            ghcr.io/${{ github.repository_owner }}/${{ needs.build-bootc.outputs.image }}${{ env.MAJOR }}:${{ needs.build-bootc.outputs.tag }}-arm64
+    outputs:
+      tag: ${{ needs.build-bootc.outputs.tag }}
 
   build-rpm:
     name: Build rpm oci artifact
@@ -169,6 +171,14 @@ jobs:
 
       - name: Install oras tool
         uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
+
+      # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
+      - name: Workaround open podman-login action issue
+        env:
+          auth: "{ \"auths\": {} }"
+        run: |
+          mkdir -p $HOME/.docker
+          echo $auth > $HOME/.docker/config.json
 
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
@@ -202,6 +212,8 @@ jobs:
           find /root/rpm -type f | sed 's#/root/rpm/##g' | \
             awk 'BEGIN {printf "oras push --registry-config /run/containers/0/auth.json --no-tty ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}"} {printf " %s:application/vnd.adrp.rpm.v1 ", $0} END{print ""}' | \
             xargs -I {} sh -c "eval {}"
+    outputs:
+      tag: ${{ needs.info.outputs.tag }}
 
   merge-rpm:
     # section pulled from:
@@ -209,7 +221,6 @@ jobs:
     name: Merge multi-arch rpm artifacts
     runs-on: ubuntu-latest
     needs:
-      - info
       - build-rpm
     steps:
       - name: Set up Docker Buildx
@@ -225,18 +236,19 @@ jobs:
       - name: Create manifest list and pushes
         run: |-
           docker buildx imagetools create \
-            --tag="ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}" \
+            --tag="ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}:${{ needs.build-rpm.outputs.tag }}" \
             --tag="ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}::latest" \
-            ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-amd64 \
-            ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-arm64
+            ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}:${{ needs.build-rpm.outputs.tag }}-amd64 \
+            ghcr.io/${{ github.repository_owner }}/rpm/${{ env.DISTRO }}${{ env.MAJOR }}:${{ needs.build-rpm.outputs.tag }}-arm64
+    outputs:
+      tag: ${{ needs.build-rpm.outputs.tag }}
 
   zarf:
     name: Build zarf packages
     runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || matrix.platform == 'arm64' && 'ubuntu-24.04-arm' }}
     needs:
-      - info
       - merge-bootc
-      - merge-rpm
+      - merge-bootc
     strategy:
       fail-fast: false
       matrix:
@@ -282,7 +294,7 @@ jobs:
             el09/${{ env.DISTRO }} \
             --confirm \
             --flavor ${{ matrix.flavor }} \
-            --set version=${{ needs.info.outputs.tag }}
+            --set version=${{ needs.merge-bootc.outputs.tag }}
 
       - name: Publish Zarf package
         run: |-
