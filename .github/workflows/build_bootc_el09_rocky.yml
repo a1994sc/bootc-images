@@ -35,7 +35,7 @@ jobs:
           sha: ${{ github.sha }}
           job: ${{ github.run_number }}
         run: |-
-          echo "TAG=$(yq '.jobs.build-rpm.container.image' .github/workflows/build_bootc_el09_rocky.yml | sed -E "s/.+:(.+)/\1/g")-$(echo $job-${sha:0:8})" >> $GITHUB_OUTPUT
+          echo "TAG=$(yq '.jobs.build-rpm.container.image' .github/workflows/build_bootc_el09_rocky.yml | sed -E "s/.+:(.+)/\1/g; s#-ubi##g")-$(echo $job-${sha:0:8})" >> $GITHUB_OUTPUT
 
       - name: Get Git Tag Info
         id: git-tag
@@ -184,7 +184,7 @@ jobs:
         working-directory: /root/rpm
         run: |-
           find /root/rpm -type f | sed 's#/root/rpm/##g' | \
-            awk 'BEGIN {printf "oras push --artifact-platform \"linux/${{ matrix.platform }}\" --registry-config /run/containers/0/auth.json --no-tty ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}"} {printf " %s:application/vnd.adrp.rpm.v1 ", $0} END{print ""}' | \
+            awk 'BEGIN {printf "oras push --artifact-platform \"linux/${{ matrix.platform }}\" --registry-config /run/containers/0/auth.json --no-tty ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/rocky${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}"} {printf " %s:application/vnd.adrp.rpm.v1 ", $0} END{print ""}' | \
             xargs -I {} sh -c "eval {}"
     outputs:
       tag: ${{ needs.info.outputs.tag }}
@@ -215,10 +215,10 @@ jobs:
       - name: Create manifest list and pushes
         run: |-
           oras manifest index create \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/alma${{ env.MAJOR }}:latest \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/rocky${{ env.MAJOR }}:latest \
             ${{ needs.build-rpm.outputs.tag }}-amd64 ${{ needs.build-rpm.outputs.tag }}-arm64
           oras manifest index create \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/alma${{ env.MAJOR }}:${{ needs.build-rpm.outputs.tag }} \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/rocky${{ env.MAJOR }}:${{ needs.build-rpm.outputs.tag }} \
             ${{ needs.build-rpm.outputs.tag }}-amd64 ${{ needs.build-rpm.outputs.tag }}-arm64
     outputs:
       tag: ${{ needs.build-rpm.outputs.tag }}
