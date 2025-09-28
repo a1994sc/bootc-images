@@ -15,7 +15,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - uses: commit-check/commit-check-action@d627c141cd667d09d58245154a10cb995892eb9e # v0.9.3
+      - uses: commit-check/commit-check-action@04667fa89b3d3feb0f28facf9c5ff944a5500e85 # v0.9.4
         env:
           GH_TOKEN: ${{ github.token }}
         with:
