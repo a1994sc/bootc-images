@@ -14,7 +14,7 @@ on:
 env:
   DISTRO: "rhel"
   MAJOR: "9"
-  IMAGE_NAME: ${{ github.event.repository.name }}/rhel
+  IMAGE_NAME: ${{ github.event.repository.name }}/bootc/rhel
   REGISTRY: ghcr.io/${{ github.repository_owner }}
 
 jobs:
