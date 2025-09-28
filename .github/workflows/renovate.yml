@@ -19,5 +19,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         with:
+          commit-signoff: false
           author-name: true
           author-email: true

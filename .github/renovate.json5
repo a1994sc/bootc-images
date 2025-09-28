@@ -3,7 +3,6 @@
   extends: [
     "config:recommended",
     "helpers:pinGitHubActionDigests",
-    ":gitSignOff",
   ],
   assignees: [
     "@A1994SC"
