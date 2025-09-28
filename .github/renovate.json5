@@ -9,6 +9,7 @@
   ],
   dependencyDashboard: true,
   automerge: true,
+  automergeStrategy: "merge-commit",
   platformAutomerge: true,
   packageRules: [
     {
