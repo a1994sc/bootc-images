@@ -52,7 +52,7 @@
       matchPackageNames: [
         "quay.io/rockylinux/rockylinux",
       ],
-      versioning: "regex:^(?<major>9)\\.(?<minor>\\d+).(?<patch>\\d+)$",
+      versioning: "regex:^(?<major>9)\\.(?<minor>\\d+).(?<patch>\\d+)-ubi$",
       automerge: true,
       matchFileNames: [
         ".github/workflows/build_bootc_el09_rocky.yml",
@@ -62,7 +62,7 @@
       matchPackageNames: [
         "quay.io/rockylinux/rockylinux",
       ],
-      versioning: "regex:^(?<major>10)\\.(?<minor>\\d+).(?<patch>\\d+)$",
+      versioning: "regex:^(?<major>10)\\.(?<minor>\\d+).(?<patch>\\d+)-ubi$",
       automerge: true,
       matchFileNames: [
         ".github/workflows/build_bootc_el10_rocky.yml",
