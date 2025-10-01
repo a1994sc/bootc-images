@@ -196,7 +196,7 @@ jobs:
         run: |-
           tar -czf repodata.tar.gz repodata
           rm -rf repodata
-          find -type f -name "*.rpm" -exec tar -czf {}.tar.gz {} \; -exec rm -f {} \;
+          find -type f -name "*.rpm" -exec tar --owner=0 --group=0 --no-same-owner --no-same-permissions --mtime="1970-01-01 00:00:00" -czf {}.tar.gz {} \; -exec rm -f {} \;
 
           find /root/rpm -type f -name "*.tar.gz" | sed 's#/root/rpm/##g' | \
             awk 'BEGIN {printf "oras push --artifact-type application/vnd.oci.image.manifest.v1+json --config /root/config.json:application/vnd.oci.image.config.v1+json --registry-config /run/containers/0/auth.json --no-tty ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}"} {printf " %s:application/vnd.oci.image.layer.v1.tar+gzip ", $0} END{print ""}' | \
