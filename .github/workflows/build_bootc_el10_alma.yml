@@ -189,7 +189,7 @@ jobs:
       - name: Create config file
         working-directory: /root
         run: |-
-          yq --null-input -oj -pj '{"architecture": "${{ matrix.platform }}", "config": {}, "created": "1970-01-01T00:00:00Z", "history": [], "os": "linux"}' > /root/config.json
+          yq --null-input -oj -pj '{"architecture": "${{ matrix.platform }}", "config": {}, "created": "1970-01-01T00:00:00Z", "history": [], "os": "linux", "rootfs": { "type": "layers" }}' > /root/config.json
 
       - name: Upload to ghcr
         working-directory: /root/rpm
