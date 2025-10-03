@@ -171,27 +171,18 @@ jobs:
         run: |-
           mkdir -p /root/rpm
 
+      - name: Download group packages (core and standard)
+        run: |-
+          dnf group install core standard \
+            --releasever ${{ env.MAJOR }} --assumeyes --downloadonly --destdir /root/rpm --installroot /root/rpm --nodocs --refresh
+
       - name: Download packages
         run: |-
-          dnf group install \
-            core standard \
-            --releasever ${{ env.MAJOR }} \
-            --assumeyes \
-            --downloadonly \
-            --destdir /root/rpm \
-            --installroot /root/rpm \
-            --nodocs \
-            --refresh
+          dnf install yq container-selinux \
+            --releasever ${{ env.MAJOR }} --assumeyes --downloadonly --destdir /root/rpm --installroot /root/rpm --nodocs --refresh
 
-          dnf install yq \
-            --releasever ${{ env.MAJOR }} \
-            --assumeyes \
-            --downloadonly \
-            --destdir /root/rpm \
-            --installroot /root/rpm \
-            --nodocs \
-            --refresh
-
+      - name: Create local repo files
+        run: |-
           rm -rf /root/rpm/var /root/rpm/usr
           createrepo /root/rpm
 
