@@ -182,12 +182,20 @@ jobs:
             --installroot /root/rpm \
             --nodocs \
             --refresh
-          rm -rf /root/rpm/var
-          rm -rf /root/rpm/usr
+
+          dnf install yq \
+            --releasever ${{ env.MAJOR }} \
+            --assumeyes \
+            --downloadonly \
+            --destdir /root/rpm \
+            --installroot /root/rpm \
+            --nodocs \
+            --refresh
+
+          rm -rf /root/rpm/var /root/rpm/usr
           createrepo /root/rpm
 
       - name: Create config file
-        working-directory: /root
         run: |-
           yq --null-input -oj -pj '{"architecture": "${{ matrix.platform }}", "config": {}, "created": "1970-01-01T00:00:00Z", "history": [], "os": "linux", "rootfs": { "type": "layers" }}' > /root/config.json
 
