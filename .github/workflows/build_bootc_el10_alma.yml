@@ -74,6 +74,7 @@ jobs:
     permissions:
       packages: write
     container:
+      # renovate: datasource=docker
       image: quay.io/almalinuxorg/10-base:10.0-20250909
       options: --privileged
     steps:
@@ -136,6 +137,7 @@ jobs:
     permissions:
       packages: write
     container:
+      # renovate: datasource=docker
       image: quay.io/almalinuxorg/10-base:10.0-20250909
       # needed for login to ghcr
       options: --privileged

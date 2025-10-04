@@ -83,7 +83,20 @@
       ],
       depNameTemplate: "fedora",
       datasourceTemplate: "custom.fedora-stable",
-    }
+    },
+    {
+      customType: "regex",
+      description: [
+        "Process custom dependencies"
+      ],
+      managerFilePatterns: [
+        "/(^|/).+\\.ya?ml(\\.j2)?$/"
+      ],
+      matchStrings: [
+        "(?m:# renovate: datasource=(?<datasource>\\S+)\\n.+: (?:oci:\/{2})?(?<depName>[a-z0-9\\.].+):(?<currentValue>v?(?:[0-9]+\\.?){3}(?:-.+)?$))"
+      ],
+      datasourceTemplate: "{{#if datasource}}{{{datasource}}}{{else}}github-releases{{/if}}"
+    },
   ],
   customDatasources: {
     "fedora-stable": {
