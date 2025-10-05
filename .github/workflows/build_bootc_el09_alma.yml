@@ -180,7 +180,7 @@ jobs:
       - name: Download packages
         run: |-
           dnf install yq container-selinux ansible-core \
-            ansible-collection-ansible-posix ansible-collection-community-general ansible-collection-ansible-utils \
+            ansible-collection-ansible-posix ansible-collection-community-general \
             --releasever ${{ env.MAJOR }} --assumeyes --downloadonly --destdir /root/rpm --installroot /root/rpm --nodocs --refresh
 
       - name: Create local repo files
