@@ -195,19 +195,9 @@ jobs:
 
           find -type f -name "*.rpm" -exec echo "ADD {} /" >> /root/Containerfile \;
 
-      - name: Use buildah bud to create the image
-        id: build-image
-        uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2.13
-        with:
-          image: ${{ env.IMAGE_NAME }}
-          tags: ${{ needs.info.outputs.tag }}
-          containerfiles: |-
-            /root/Containerfile
-          context: /root/rpm
-
-      - name: Re-tag the built image
+      - name: Create Image
         run: |-
-          podman tag ${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }} ${{ env.IMAGE_FULL }}
+          podman build --timestamp=0 --jobs 3 --tag ${{ env.IMAGE_FULL }} -f /root/Containerfile /root/rpm
 
       - name: Push the built image
         env:
