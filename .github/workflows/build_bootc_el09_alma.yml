@@ -208,11 +208,6 @@ jobs:
   merge-bootc:
     name: Merge artifacts (bootc)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        artifact:
-          - "bootc"
     needs:
       - build-bootc
     steps:
@@ -229,10 +224,10 @@ jobs:
       - name: Create manifest list and pushes
         run: |-
           oras manifest index create \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/alma${{ env.MAJOR }}:latest \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/bootc/alma${{ env.MAJOR }}:latest \
             ${{ needs.build-bootc.outputs.tag }}-amd64 ${{ needs.build-bootc.outputs.tag }}-arm64
           oras manifest index create \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/alma${{ env.MAJOR }}:${{ needs.build-bootc.outputs.tag }} \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/bootc/alma${{ env.MAJOR }}:${{ needs.build-bootc.outputs.tag }} \
             ${{ needs.build-bootc.outputs.tag }}-amd64 ${{ needs.build-bootc.outputs.tag }}-arm64
     outputs:
       tag: ${{ needs.build-bootc.outputs.tag }}
@@ -240,11 +235,6 @@ jobs:
   merge-rpm:
     name: Merge artifacts (rpm)
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        artifact:
-          - "rpm"
     needs:
       - build-rpm
     steps:
@@ -261,10 +251,10 @@ jobs:
       - name: Create manifest list and pushes
         run: |-
           oras manifest index create \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/alma${{ env.MAJOR }}:latest \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma${{ env.MAJOR }}:latest \
             ${{ needs.build-rpm.outputs.tag }}-amd64 ${{ needs.build-rpm.outputs.tag }}-arm64
           oras manifest index create \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/alma${{ env.MAJOR }}:${{ needs.build-rpm.outputs.tag }} \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma${{ env.MAJOR }}:${{ needs.build-rpm.outputs.tag }} \
             ${{ needs.build-rpm.outputs.tag }}-amd64 ${{ needs.build-rpm.outputs.tag }}-arm64
     outputs:
       tag: ${{ needs.build-rpm.outputs.tag }}
@@ -280,8 +270,6 @@ jobs:
         platform:
           - amd64
           - arm64
-        flavor:
-          - bootc
     permissions:
       packages: write
     steps:
@@ -304,7 +292,7 @@ jobs:
             el09/${{ env.DISTRO }} \
             --architecture ${{ matrix.platform }} \
             --confirm \
-            --flavor ${{ matrix.flavor }} \
+            --flavor bootc \
             --set version=${{ needs.merge-bootc.outputs.tag }}
 
       - name: Publish Zarf package
@@ -322,8 +310,6 @@ jobs:
         platform:
           - amd64
           - arm64
-        flavor:
-          - rpm
     permissions:
       packages: write
     steps:
@@ -346,7 +332,7 @@ jobs:
             el09/${{ env.DISTRO }} \
             --architecture ${{ matrix.platform }} \
             --confirm \
-            --flavor ${{ matrix.flavor }} \
+            --flavor rpm \
             --set version=${{ needs.merge-rpm.outputs.tag }}
 
       - name: Publish Zarf package
