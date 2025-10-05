@@ -205,18 +205,16 @@ jobs:
     outputs:
       tag: ${{ needs.info.outputs.tag }}
 
-  merge:
-    name: Merge artifacts arch
+  merge-bootc:
+    name: Merge artifacts (bootc)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         artifact:
           - "bootc"
-          - "rpm"
     needs:
       - build-bootc
-      - build-rpm
     steps:
       - name: Install oras tool
         uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
@@ -239,11 +237,43 @@ jobs:
     outputs:
       tag: ${{ needs.build-bootc.outputs.tag }}
 
-  zarf:
-    name: Build zarf packages
+  merge-rpm:
+    name: Merge artifacts (rpm)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        artifact:
+          - "rpm"
+    needs:
+      - build-rpm
+    steps:
+      - name: Install oras tool
+        uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
+
+      - name: Log in to the GitHub Container registry
+        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create manifest list and pushes
+        run: |-
+          oras manifest index create \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/alma${{ env.MAJOR }}:latest \
+            ${{ needs.build-rpm.outputs.tag }}-amd64 ${{ needs.build-rpm.outputs.tag }}-arm64
+          oras manifest index create \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/alma${{ env.MAJOR }}:${{ needs.build-rpm.outputs.tag }} \
+            ${{ needs.build-rpm.outputs.tag }}-amd64 ${{ needs.build-rpm.outputs.tag }}-arm64
+    outputs:
+      tag: ${{ needs.build-rpm.outputs.tag }}
+
+  zarf-bootc:
+    name: Build zarf packages (bootc)
     runs-on: ubuntu-latest
     needs:
-      - merge
+      - merge-bootc
     strategy:
       fail-fast: false
       matrix:
@@ -251,7 +281,6 @@ jobs:
           - amd64
           - arm64
         flavor:
-          - rpm
           - bootc
     permissions:
       packages: write
@@ -276,7 +305,49 @@ jobs:
             --architecture ${{ matrix.platform }} \
             --confirm \
             --flavor ${{ matrix.flavor }} \
-            --set version=${{ needs.merge.outputs.tag }}
+            --set version=${{ needs.merge-bootc.outputs.tag }}
+
+      - name: Publish Zarf package
+        run: |-
+          zarf package publish zarf-*.zst oci://ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/zarf
+
+  zarf-rpm:
+    name: Build zarf packages (rpm)
+    runs-on: ubuntu-latest
+    needs:
+      - merge-rpm
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - amd64
+          - arm64
+        flavor:
+          - rpm
+    permissions:
+      packages: write
+    steps:
+      - name: Clone the repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: Install The Latest Release Version of Zarf
+        uses: zarf-dev/setup-zarf@10e539efed02f75ec39eb8823e22a5c795f492ae # v1.0.1
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package Zarf package
+        run: |-
+          zarf package create \
+            el09/${{ env.DISTRO }} \
+            --architecture ${{ matrix.platform }} \
+            --confirm \
+            --flavor ${{ matrix.flavor }} \
+            --set version=${{ needs.merge-rpm.outputs.tag }}
 
       - name: Publish Zarf package
         run: |-
