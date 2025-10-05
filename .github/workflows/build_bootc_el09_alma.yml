@@ -141,9 +141,7 @@ jobs:
       # needed for login to ghcr
       options: --privileged
     env:
-      IMAGE_STAGING: |-
-        ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma9:staging-${{ matrix.platform }}
-      IMAGE_PROD: |-
+      IMAGE_FULL: |-
         ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma9:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
     steps:
       - name: Get container tools into builder
@@ -177,14 +175,10 @@ jobs:
         run: |-
           mkdir -p /root/rpm
 
-      - name: Download group packages (core and standard)
-        run: |-
-          dnf group install core standard \
-            --releasever ${{ env.MAJOR }} --assumeyes --downloadonly --destdir /root/rpm --installroot /root/rpm --nodocs --refresh
-
       - name: Download packages
         run: |-
-          dnf install yq container-selinux ansible-core \
+          dnf install @core @standard \
+            yq container-selinux ansible-core \
             ansible-collection-ansible-posix ansible-collection-community-general \
             --releasever ${{ env.MAJOR }} --assumeyes --downloadonly --destdir /root/rpm --installroot /root/rpm --nodocs --refresh
 
@@ -193,48 +187,33 @@ jobs:
           rm -rf /root/rpm/var /root/rpm/usr
           createrepo /root/rpm
 
-      - name: Create config file
-        run: |-
-          yq --null-input -oj -pj '{"architecture": "${{ matrix.platform }}", "config": {}, "created": "1970-01-01T00:00:00Z", "history": [], "os": "linux", "rootfs": { "type": "layers" }}' > /root/config.json
-
-      - name: Create tarballs
+      - name: Create dockerfile
         working-directory: /root/rpm
         run: |-
-          tar -czf repodata.tar.gz repodata
-          rm -rf repodata
-          find -type f -name "*.rpm" -exec tar --owner=0 --group=0 --no-same-owner --no-same-permissions --mtime="1970-01-01 00:00:00" -czf {}.tar.gz {} \; -exec rm -f {} \;
+          echo "FROM scratch"   >> /root/Containerfile
+          echo "ADD repodata /" >> /root/Containerfile
 
-      - name: Upload to ghcr staging
-        working-directory: /root/rpm
-        run: |-
-          find /root/rpm -type f -name "*.tar.gz" | sed 's#/root/rpm/##g' | \
-            awk '
-              BEGIN {
-                printf "oras push --artifact-type application/vnd.oci.image.manifest.v1+json --config /root/config.json:application/vnd.oci.image.config.v1+json --registry-config /run/containers/0/auth.json --no-tty ${{ env.IMAGE_STAGING }}"
-              } {
-                printf " %s:application/vnd.oci.image.layer.v1.tar+gzip ", $0
-              } END{print ""}' | \
-            xargs -I {} sh -c "eval {}"
+          find -type f -name "*.rpm" -exec echo "ADD {} /" >> /root/Containerfile \;
 
-      - name: Fetch staging digests
-        run: |-
-          oras manifest fetch ${{ env.IMAGE_STAGING }} | yq -oj -pj '[.layers[].digest]' > /root/diff-ids.json
+      - name: Use buildah bud to create the image
+        id: build-image
+        uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2.13
+        with:
+          image: ${{ env.IMAGE_NAME }}
+          tags: ${{ needs.info.outputs.tag }}
+          containerfiles: |-
+            /root/Containerfile
+          context: ./.
 
-      - name: Update config.json
+      - name: Re-tag the built image
         run: |-
-          yq ea -i 'select(fi == 1) as $diff | (select(fi == 0) | .rootfs.diff_ids = $diff)' /root/config.json /root/diff-ids.json
+          podman tag ${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }} ${{ env.IMAGE_FULL }}
 
-      - name: Upload to ghcr
-        working-directory: /root/rpm
+      - name: Push the built image
+        env:
+          REGISTRY_AUTH_FILE: /run/containers/0/auth.json
         run: |-
-          find /root/rpm -type f -name "*.tar.gz" | sed 's#/root/rpm/##g' | \
-            awk '
-              BEGIN {
-                printf "oras push --artifact-type application/vnd.oci.image.manifest.v1+json --config /root/config.json:application/vnd.oci.image.config.v1+json --registry-config /run/containers/0/auth.json --no-tty ${{ env.IMAGE_PROD }}"
-              } {
-                printf " %s:application/vnd.oci.image.layer.v1.tar+gzip ", $0
-              } END{print ""}' | \
-            xargs -I {} sh -c "eval {}"
+          podman push --tls-verify=true ${{ env.IMAGE_FULL }}
     outputs:
       tag: ${{ needs.info.outputs.tag }}
 
