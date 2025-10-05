@@ -150,7 +150,7 @@ jobs:
 
           dnf config-manager --set-enabled crb
 
-          dnf install -y yq podman fuse-overlayfs createrepo
+          dnf install -y yq podman buildah skopeo fuse-overlayfs createrepo
 
       - name: Install oras tool
         uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
@@ -203,7 +203,7 @@ jobs:
           tags: ${{ needs.info.outputs.tag }}
           containerfiles: |-
             /root/Containerfile
-          context: ./.
+          context: /root/rpm
 
       - name: Re-tag the built image
         run: |-
