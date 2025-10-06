@@ -142,9 +142,7 @@ jobs:
       # needed for login to ghcr
       options: --privileged
     env:
-      IMAGE_STAGING: |-
-        ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma10:staging-${{ matrix.platform }}
-      IMAGE_PROD: |-
+      IMAGE: |-
         ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma10:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
     steps:
       - name: Get container tools into builder
@@ -153,7 +151,7 @@ jobs:
 
           dnf config-manager --set-enabled crb
 
-          dnf install -y yq podman fuse-overlayfs createrepo
+          dnf install -y yq podman fuse-overlayfs createrepo file
 
       - name: Install oras tool
         uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
@@ -178,15 +176,9 @@ jobs:
         run: |-
           mkdir -p /root/rpm
 
-      - name: Download group packages (core and standard)
-        run: |-
-          dnf group install core standard \
-            --releasever ${{ env.MAJOR }} --assumeyes --downloadonly --destdir /root/rpm --installroot /root/rpm --nodocs --refresh
-
       - name: Download packages
         run: |-
-          dnf install yq container-selinux ansible-core \
-            ansible-collection-ansible-posix ansible-collection-community-general \
+          dnf install @core @standard yq container-selinux ansible-core \
             --releasever ${{ env.MAJOR }} --assumeyes --downloadonly --destdir /root/rpm --installroot /root/rpm --nodocs --refresh
 
       - name: Create local repo files
@@ -194,56 +186,34 @@ jobs:
           rm -rf /root/rpm/var /root/rpm/usr
           createrepo /root/rpm
 
-      - name: Create config file
-        run: |-
-          yq --null-input -oj -pj '{"architecture": "${{ matrix.platform }}", "config": {}, "created": "1970-01-01T00:00:00Z", "history": [], "os": "linux", "rootfs": { "type": "layers" }}' > /root/config.json
-
-      - name: Create tarballs
-        working-directory: /root/rpm
-        run: |-
-          tar -czf repodata.tar.gz repodata
-          rm -rf repodata
-          find -type f -name "*.rpm" -exec tar --owner=0 --group=0 --no-same-owner --no-same-permissions --mtime="1970-01-01 00:00:00" -czf {}.tar.gz {} \; -exec rm -f {} \;
-
       - name: Upload to ghcr staging
         working-directory: /root/rpm
         run: |-
-          find /root/rpm -type f -name "*.tar.gz" | sed 's#/root/rpm/##g' | \
+          find /root/rpm -type f | sed 's#/root/rpm/##g' | xargs -I {} bash -c 'echo {}:$(file -b --mime-type {})' | \
             awk '
               BEGIN {
-                printf "oras push --artifact-type application/vnd.oci.image.manifest.v1+json --config /root/config.json:application/vnd.oci.image.config.v1+json --registry-config /run/containers/0/auth.json --no-tty ${{ env.IMAGE_STAGING }}"
+                printf "oras push --artifact-type application/vnd.oci.image.manifest.v1+json "
+                printf "--config /root/config.json:application/vnd.oci.image.config.v1+json "
+                printf "--registry-config /run/containers/0/auth.json --no-tty ${{ env.IMAGE }}"
               } {
-                printf " %s:application/vnd.oci.image.layer.v1.tar+gzip ", $0
-              } END{print ""}' | \
-            xargs -I {} sh -c "eval {}"
-
-      - name: Fetch staging digests
-        run: |-
-          oras manifest fetch ${{ env.IMAGE_STAGING }} | yq -oj -pj '[.layers[].digest]' > /root/diff-ids.json
-
-      - name: Update config.json
-        run: |-
-          yq ea -i 'select(fi == 1) as $diff | (select(fi == 0) | .rootfs.diff_ids = $diff)' /root/config.json /root/diff-ids.json
-
-      - name: Upload to ghcr
-        working-directory: /root/rpm
-        run: |-
-          find /root/rpm -type f -name "*.tar.gz" | sed 's#/root/rpm/##g' | \
-            awk '
-              BEGIN {
-                printf "oras push --artifact-type application/vnd.oci.image.manifest.v1+json --config /root/config.json:application/vnd.oci.image.config.v1+json --registry-config /run/containers/0/auth.json --no-tty ${{ env.IMAGE_PROD }}"
-              } {
-                printf " %s:application/vnd.oci.image.layer.v1.tar+gzip ", $0
+                printf " %s ", $0
               } END{print ""}' | \
             xargs -I {} sh -c "eval {}"
     outputs:
       tag: ${{ needs.info.outputs.tag }}
 
-  merge-bootc:
-    name: Merge artifacts (bootc)
+  merge:
+    name: Merge artifacts
     runs-on: ubuntu-latest
     needs:
       - build-bootc
+      - build-rpm
+    strategy:
+      fail-fast: false
+      matrix:
+        type:
+          - bootc
+          - rpm
     steps:
       - name: Install oras tool
         uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
@@ -258,49 +228,25 @@ jobs:
       - name: Create manifest list and pushes
         run: |-
           oras manifest index create \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/bootc/alma${{ env.MAJOR }}:latest \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.type }}/alma${{ env.MAJOR }}:latest \
             ${{ needs.build-bootc.outputs.tag }}-amd64 ${{ needs.build-bootc.outputs.tag }}-arm64
           oras manifest index create \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/bootc/alma${{ env.MAJOR }}:${{ needs.build-bootc.outputs.tag }} \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.type }}/alma${{ env.MAJOR }}:${{ needs.build-bootc.outputs.tag }} \
             ${{ needs.build-bootc.outputs.tag }}-amd64 ${{ needs.build-bootc.outputs.tag }}-arm64
     outputs:
       tag: ${{ needs.build-bootc.outputs.tag }}
 
-  merge-rpm:
-    name: Merge artifacts (rpm)
+  zarf:
+    name: Build zarf packages
     runs-on: ubuntu-latest
     needs:
-      - build-rpm
-    steps:
-      - name: Install oras tool
-        uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
-
-      - name: Log in to the GitHub Container registry
-        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create manifest list and pushes
-        run: |-
-          oras manifest index create \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma${{ env.MAJOR }}:latest \
-            ${{ needs.build-rpm.outputs.tag }}-amd64 ${{ needs.build-rpm.outputs.tag }}-arm64
-          oras manifest index create \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma${{ env.MAJOR }}:${{ needs.build-rpm.outputs.tag }} \
-            ${{ needs.build-rpm.outputs.tag }}-amd64 ${{ needs.build-rpm.outputs.tag }}-arm64
-    outputs:
-      tag: ${{ needs.build-rpm.outputs.tag }}
-
-  zarf-bootc:
-    name: Build zarf packages (bootc)
-    runs-on: ubuntu-latest
-    needs:
-      - merge-bootc
+      - merge
     strategy:
       fail-fast: false
       matrix:
+        type:
+          - bootc
+          - rpm
         platform:
           - amd64
           - arm64
@@ -326,48 +272,8 @@ jobs:
             el10/${{ env.DISTRO }} \
             --architecture ${{ matrix.platform }} \
             --confirm \
-            --flavor bootc \
-            --set version=${{ needs.merge-bootc.outputs.tag }}
-
-      - name: Publish Zarf package
-        run: |-
-          zarf package publish zarf-*.zst oci://ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/zarf
-
-  zarf-rpm:
-    name: Build zarf packages (rpm)
-    runs-on: ubuntu-latest
-    needs:
-      - merge-rpm
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - amd64
-          - arm64
-    permissions:
-      packages: write
-    steps:
-      - name: Clone the repository
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-
-      - name: Install The Latest Release Version of Zarf
-        uses: zarf-dev/setup-zarf@10e539efed02f75ec39eb8823e22a5c795f492ae # v1.0.1
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Package Zarf package
-        run: |-
-          zarf package create \
-            el10/${{ env.DISTRO }} \
-            --architecture ${{ matrix.platform }} \
-            --confirm \
-            --flavor rpm \
-            --set version=${{ needs.merge-rpm.outputs.tag }}
+            --flavor ${{ matrix.type }} \
+            --set version=${{ needs.merge.outputs.tag }}
 
       - name: Publish Zarf package
         run: |-
