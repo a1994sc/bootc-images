@@ -193,7 +193,7 @@ jobs:
             awk '
               BEGIN {
                 printf "oras push --artifact-type application/vnd.adrp.package.bundle.v1 "
-                printf "--artifact-platform "linux/${{ matrix.platform }}" "
+                printf "--artifact-platform 'linux/${{ matrix.platform }}' "
                 printf "--registry-config /run/containers/0/auth.json --no-tty ${{ env.IMAGE }}"
               } {
                 printf " %s ", $0
