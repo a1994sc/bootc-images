@@ -144,11 +144,11 @@ jobs:
     steps:
       - name: Get container tools into builder
         run: |
-          dnf -y install epel-release 'dnf-command(config-manager)'
+          dnf install -y 'dnf-command(config-manager)'
 
           dnf config-manager --set-enabled crb
 
-          dnf install -y yq podman fuse-overlayfs createrepo
+          dnf install -y epel-release podman fuse-overlayfs createrepo
 
       - name: Install oras tool
         uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
@@ -190,8 +190,10 @@ jobs:
           createrepo /root/rpm
 
       - name: Create config file
-        run: |-
-          yq --null-input -oj -pj '{"architecture": "${{ matrix.platform }}", "config": {}, "created": "1970-01-01T00:00:00Z", "history": [], "os": "linux", "rootfs": { "type": "layers" }}' > /root/config.json
+        uses: mikefarah/yq@7ccaf8e700ce99eb3f0f6cef7f5930a0b3c827cd # v4.49.2
+        with:
+          cmd: |-
+            yq --null-input -oj -pj '{"architecture": "${{ matrix.platform }}", "config": {}, "created": "1970-01-01T00:00:00Z", "history": [], "os": "linux", "rootfs": { "type": "layers" }}' > /root/config.json
 
       - name: Upload to ghcr
         working-directory: /root/rpm
