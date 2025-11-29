@@ -2,14 +2,6 @@
 name: Container, RHEL, EL9
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'el09/rhel/**'
-      - .github/workflows/build_bootc_el09_rhel.yml
-    branches:
-      - main
-    tags:
-      - 'rhel/9\.[0-9]+-[0-9]+'
 
 env:
   DISTRO: "rhel"
@@ -145,6 +137,8 @@ jobs:
       matrix:
         artifact:
           - "bootc"
+    permissions:
+      packages: write
     needs:
       - build
     steps:
