@@ -145,6 +145,10 @@ jobs:
     steps:
       - name: Get container tools into builder
         run: |-
+          dnf install --assumeyes epel-release 'dnf-command(config-manager)'
+
+          dnf config-manager --set-enabled crb
+
           dnf install --refresh --assumeyes podman fuse-overlayfs createrepo
 
       - name: Install oras tool
