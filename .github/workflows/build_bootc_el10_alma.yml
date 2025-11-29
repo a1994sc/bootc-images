@@ -192,7 +192,7 @@ jobs:
 
       - name: Install yq
         run: |-
-          dnf install yq
+          dnf install --assumeyes --releasever ${{ env.MAJOR }} yq
 
       - name: Create config file
         run: |-
