@@ -128,6 +128,7 @@ jobs:
     name: Build rpm oci artifact
     runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || matrix.platform == 'arm64' && 'ubuntu-24.04-arm' }}
     strategy:
+      fail-fast: false
       matrix:
         platform:
           - amd64
@@ -148,7 +149,9 @@ jobs:
 
           dnf config-manager --set-enabled crb
 
-          dnf install --refresh --assumeyes yq podman fuse-overlayfs createrepo
+          dnf install --refresh --assumeyes podman fuse-overlayfs createrepo
+
+          dnf install --assumeyes yq
 
       - name: Install oras tool
         uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
