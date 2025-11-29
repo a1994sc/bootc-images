@@ -139,7 +139,7 @@ jobs:
       packages: write
     container:
       # renovate: datasource=docker
-      image: quay.io/almalinuxorg/10-base:10.1-20251124
+      image: quay.io/almalinuxorg/9-base:9.7-20251125
       # needed for login to ghcr
       options: --privileged
     steps:
