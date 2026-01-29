@@ -75,7 +75,7 @@ jobs:
       packages: write
     container:
       # renovate: datasource=docker
-      image: quay.io/almalinuxorg/9-base:9.7-20260104
+      image: quay.io/almalinuxorg/9-base:9.7-20260129
       options: --privileged
     steps:
       - name: Clone the repository
@@ -139,7 +139,7 @@ jobs:
       packages: write
     container:
       # renovate: datasource=docker
-      image: quay.io/almalinuxorg/9-base:9.7-20260104
+      image: quay.io/almalinuxorg/9-base:9.7-20260129
       # needed for login to ghcr
       options: --privileged
     steps:
