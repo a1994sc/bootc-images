@@ -1,4 +1,4 @@
-FROM ghcr.io/mikefarah/yq:4.52.2 AS yq-binary
+FROM ghcr.io/mikefarah/yq:4.52.4 AS yq-binary
 
 FROM quay.io/almalinuxorg/almalinux-bootc:9.7-20260213
 
