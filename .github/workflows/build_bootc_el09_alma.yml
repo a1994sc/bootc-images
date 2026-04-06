@@ -152,7 +152,7 @@ jobs:
           dnf install --refresh --assumeyes podman fuse-overlayfs createrepo
 
       - name: Install oras tool
-        uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
+        uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
 
       # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
       - name: Workaround open podman-login action issue
@@ -231,7 +231,7 @@ jobs:
       packages: write
     steps:
       - name: Install oras tool
-        uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
+        uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
 
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
