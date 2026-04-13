@@ -39,7 +39,7 @@ jobs:
       - name: Get container tools in builder
         run: dnf install -y lorax
 
-      - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: cache
         with:
           path: /tmp/iso
@@ -51,7 +51,7 @@ jobs:
           mkdir -p /tmp/iso
           curl -L -o /tmp/iso/almalinux-server-dvd-9.iso ${{ env.URL }}
 
-      - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         if: steps.cache.outputs.cache-hit != 'true'
         with:
           path: /tmp/iso
