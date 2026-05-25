@@ -33,7 +33,7 @@ jobs:
             major: "10"
     steps:
       - name: Delete old tags
-        uses: dataaxiom/ghcr-cleanup-action@374e2028c8fb93b7219f3771cd405fab95d3dec4 # v1.2.0
+        uses: dataaxiom/ghcr-cleanup-action@f092b48ba3b604b2a83690dc4b2bbb3392e1045f # v1.2.1
         with:
           use-regex: true
           packages: "${{ github.event.repository.name }}/${{ matrix.pkg }}/${{ matrix.distro }}${{ matrix.major }}"
@@ -42,7 +42,7 @@ jobs:
           token: '${{ secrets.GITHUB_TOKEN }}'
 
       - name: Validate images
-        uses: dataaxiom/ghcr-cleanup-action@374e2028c8fb93b7219f3771cd405fab95d3dec4 # v1.2.0
+        uses: dataaxiom/ghcr-cleanup-action@f092b48ba3b604b2a83690dc4b2bbb3392e1045f # v1.2.1
         with:
           packages: "${{ github.event.repository.name }}/${{ matrix.pkg }}/${{ matrix.distro }}${{ matrix.major }}"
           token: ${{ secrets.GITHUB_TOKEN }}
