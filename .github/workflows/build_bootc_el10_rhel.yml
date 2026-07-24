@@ -93,7 +93,7 @@ jobs:
           echo $auth > $HOME/.docker/config.json
 
       - name: Log in to the RHT terms based registry
-        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
+        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
         with:
           registry: registry.redhat.io
           username: ${{ secrets.RHT_REG_SVCUSER }}
@@ -112,7 +112,7 @@ jobs:
             el10/${{ env.DISTRO }}
 
       - name: Log in to the GitHub Container registry
-        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
+        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -157,7 +157,7 @@ jobs:
         uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
 
       - name: Log in to the GitHub Container registry
-        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
+        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
