@@ -1,24 +1,41 @@
 ---
-name: Check Renovate PR
+name: Auto-approve_Renovate
+
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - main
+  workflow_call:
+  workflow_run:
+    workflows:
+      # work-flow name
+      - Populate Renovate resources
+      # job name
+      - Update Resources
+  push:
+    branches:
+      - "renovate/**"
+
+permissions:
+  pull-requests: write
+  contents: write
+
 jobs:
-  check:
-    name: renovate-config
+  renovate:
+    name: renovate
     runs-on: ubuntu-latest
     if: ${{ github.actor == 'renovate[bot]' }}
     steps:
-      - name: Clone repo
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
-      - uses: commit-check/commit-check-action@04667fa89b3d3feb0f28facf9c5ff944a5500e85 # v0.9.4
+
+      - uses: 8BitJonny/gh-get-current-pr@4056877062a1f3b624d5d4c2bedefa9cf51435c9 # v4.0.0
+        id: PR
+
+      - name: Approve a PR
+        run: gh pr review --approve ${{ steps.PR.outputs.number }}
+        if: ${{ github.event.pull_request.html_url != '' }}
         env:
-          GH_TOKEN: ${{ github.token }}
-        with:
-          commit-signoff: false
-          author-name: true
-          author-email: true
+          GITHUB_TOKEN: ${{ github.token }}

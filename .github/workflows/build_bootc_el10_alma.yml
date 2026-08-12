@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone the repository
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Determine Build Tag
         id: tag
@@ -75,11 +75,11 @@ jobs:
       packages: write
     container:
       # renovate: datasource=docker
-      image: quay.io/almalinuxorg/10-base:10.0-20250909
+      image: quay.io/almalinuxorg/10-base:10.2-20260602
       options: --privileged
     steps:
       - name: Clone the repository
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Get container tools into builder
         run: |
@@ -103,13 +103,21 @@ jobs:
 
       - name: Use buildah bud to create the image
         id: build-image
-        uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2.13
+        uses: redhat-actions/buildah-build@3a51aade9afa17e5c78256bcbe2e1ee08c7b995b # v3.0.2
         with:
           image: ${{ env.IMAGE_NAME }}
           tags: latest ${{ needs.info.outputs.tag }}
           containerfiles: |-
             el10/${{ env.DISTRO }}/Containerfile
           context: ./.
+
+      - name: Log in to the GitHub Container registry
+        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          auth_file_path: /run/containers/0/auth.json
 
       - name: Re-tag the built image
         run: |-
@@ -128,6 +136,7 @@ jobs:
     name: Build rpm oci artifact
     runs-on: ${{ matrix.platform == 'amd64' && 'ubuntu-latest' || matrix.platform == 'arm64' && 'ubuntu-24.04-arm' }}
     strategy:
+      fail-fast: false
       matrix:
         platform:
           - amd64
@@ -138,7 +147,7 @@ jobs:
       packages: write
     container:
       # renovate: datasource=docker
-      image: quay.io/almalinuxorg/10-base:10.0-20250909
+      image: quay.io/almalinuxorg/10-base:10.2-20260602
       # needed for login to ghcr
       options: --privileged
     env:
@@ -146,15 +155,15 @@ jobs:
         ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma10:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
     steps:
       - name: Get container tools into builder
-        run: |
-          dnf -y install epel-release 'dnf-command(config-manager)'
+        run: |-
+          dnf install --assumeyes epel-release 'dnf-command(config-manager)'
 
           dnf config-manager --set-enabled crb
 
-          dnf install -y yq podman fuse-overlayfs createrepo file
+          dnf install --refresh --assumeyes podman fuse-overlayfs createrepo file
 
       - name: Install oras tool
-        uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
+        uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
 
       # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
       - name: Workaround open podman-login action issue
@@ -165,7 +174,7 @@ jobs:
           echo $auth > $HOME/.docker/config.json
 
       - name: Log in to the GitHub Container registry
-        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
+        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -184,7 +193,10 @@ jobs:
       - name: Create local repo files
         run: |-
           rm -rf /root/rpm/var /root/rpm/usr
-          createrepo /root/rpm
+
+      - name: Install yq
+        run: |-
+          dnf install --assumeyes --releasever ${{ env.MAJOR }} yq
 
       - name: Upload to ghcr staging
         working-directory: /root/rpm
@@ -216,10 +228,10 @@ jobs:
           - rpm
     steps:
       - name: Install oras tool
-        uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
+        uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
 
       - name: Log in to the GitHub Container registry
-        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
+        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -254,13 +266,13 @@ jobs:
       packages: write
     steps:
       - name: Clone the repository
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install The Latest Release Version of Zarf
         uses: zarf-dev/setup-zarf@10e539efed02f75ec39eb8823e22a5c795f492ae # v1.0.1
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}

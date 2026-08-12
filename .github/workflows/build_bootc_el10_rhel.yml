@@ -2,14 +2,6 @@
 name: Container, RHEL, EL10
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'el10/rhel/**'
-      - .github/workflows/build_bootc_el10_rhel.yml
-    branches:
-      - main
-    tags:
-      - 'rhel/10\.[0-9]+-[0-9]+'
 
 env:
   DISTRO: "rhel"
@@ -23,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Clone the repository
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Determine Build Tag
         id: tag
@@ -74,11 +66,11 @@ jobs:
       REGISTRY: ghcr.io/${{ github.repository_owner }}
     container:
       # renovate: datasource=docker
-      image: registry.access.redhat.com/ubi10/ubi:10.0-1758699521
+      image: registry.access.redhat.com/ubi10/ubi:10.2-1786398253
       options: --privileged
     steps:
       - name: Clone the repository
-        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Get container tools in UBI builder
         run: |-
@@ -101,7 +93,7 @@ jobs:
           echo $auth > $HOME/.docker/config.json
 
       - name: Log in to the RHT terms based registry
-        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
+        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
         with:
           registry: registry.redhat.io
           username: ${{ secrets.RHT_REG_SVCUSER }}
@@ -110,7 +102,7 @@ jobs:
 
       - name: Use buildah bud to create the image
         id: build-image
-        uses: redhat-actions/buildah-build@7a95fa7ee0f02d552a32753e7414641a04307056 # v2.13
+        uses: redhat-actions/buildah-build@3a51aade9afa17e5c78256bcbe2e1ee08c7b995b # v3.0.2
         with:
           image: ${{ github.event.repository.name }}/bootc/rhel
           tags: latest ${{ needs.info.outputs.tag }}
@@ -120,7 +112,7 @@ jobs:
             el10/${{ env.DISTRO }}
 
       - name: Log in to the GitHub Container registry
-        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
+        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -156,14 +148,16 @@ jobs:
       matrix:
         artifact:
           - "bootc"
+    permissions:
+      packages: write
     needs:
       - build
     steps:
       - name: Install oras tool
-        uses: oras-project/setup-oras@22ce207df3b08e061f537244349aac6ae1d214f6 # v1.2.4
+        uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
 
       - name: Log in to the GitHub Container registry
-        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
+        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
