@@ -12,20 +12,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:numtide/treefmt-nix";
     };
-    ascii-pkgs.url = "github:a1994sc/nix-pkgs";
     flake-utils = {
       inputs.systems.follows = "systems";
       url = "github:numtide/flake-utils";
     };
     # keep-sorted end
-  };
-  nixConfig = {
-    extra-substituters = [
-      "https://a1994sc.cachix.org"
-    ];
-    extra-trusted-public-keys = [
-      "a1994sc.cachix.org-1:xZdr1tcv+XGctmkGsYw3nXjO1LOpluCv4RDWTqJRczI="
-    ];
   };
   outputs =
     inputs@{ self, nixpkgs, ... }:
