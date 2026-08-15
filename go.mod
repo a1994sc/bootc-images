@@ -1,0 +1,13 @@
+module github.com/a1994sc/bootc-images
+
+go 1.26.0
+
+require (
+	github.com/gabriel-vasile/mimetype v1.4.15
+	github.com/magefile/mage v1.17.2
+	github.com/opencontainers/go-digest v1.0.0
+	github.com/opencontainers/image-spec v1.1.1
+	oras.land/oras-go/v2 v2.6.2
+)
+
+require golang.org/x/sync v0.22.0 // indirect
