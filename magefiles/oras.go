@@ -3,7 +3,6 @@ package main
 import (
 	"archive/tar"
 	"bytes"
-	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -104,58 +103,6 @@ func GenerateDiffID(dir, file string) (dig digest.Digest, filePath string, err e
 	return digest.FromBytes(data), temp, nil
 }
 
-func GenerateGZipTarBall(dir string, file string) (filePath string, tmpDir string, err error) {
-	tmpDir, err = MakeTempDir("/tmp")
-	if err != nil {
-		return "", "", err
-	}
-	info, err := os.Stat(file)
-	if err != nil {
-		return "", "", err
-	}
-
-	filePath = filepath.Join(tmpDir, fmt.Sprintf("%s.tgz", filepath.Base(file)))
-
-	out, err := os.Create(filePath)
-	if err != nil {
-		return "", "", err
-	}
-	defer out.Close()
-
-	gw := gzip.NewWriter(out)
-	tw := tar.NewWriter(gw)
-
-	hdr, err := tar.FileInfoHeader(info, "")
-	if err != nil {
-		return "", "", err
-	}
-	hdr.Name = strings.TrimPrefix(file, fmt.Sprintf("%s/", dir))
-
-	if err := tw.WriteHeader(hdr); err != nil {
-		return "", "", err
-	}
-
-	src, err := os.Open(file)
-	if err != nil {
-		return "", "", err
-	}
-	defer src.Close()
-
-	if _, err := io.Copy(tw, src); err != nil {
-		return "", "", err
-	}
-
-	// Close explicitly, in order: tar footer must be written before gzip is finalized.
-	if err := tw.Close(); err != nil {
-		return "", "", err
-	}
-	if err := gw.Close(); err != nil {
-		return "", "", err
-	}
-
-	return filePath, tmpDir, nil
-}
-
 func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (*file.Store, error) {
 	store, err := file.New(ociDir)
 	if err != nil {
@@ -187,6 +134,9 @@ func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (*file.Sto
 		if err != nil {
 			return err
 		}
+		defer func() {
+			os.RemoveAll(filepath.Dir(f))
+		}()
 		if id == ocispec.DescriptorEmptyJSON.Digest {
 			return nil
 		}
