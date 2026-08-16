@@ -1,4 +1,4 @@
-// Copyright 2026 colonel-byte
+// Copyright 2016 The Linux Foundation
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build ignore
-// +build ignore
+package specs
 
-package main
-
-import (
-	"os"
-
-	"github.com/magefile/mage/mage"
-)
-
-func main() {
-	os.Exit(mage.Main())
+// Versioned provides a struct with the manifest schemaVersion and mediaType.
+// Incoming content with unknown schema version can be decoded against this
+// struct to check the version.
+type Versioned struct {
+	// SchemaVersion is the image manifest schema that this image follows
+	SchemaVersion int `json:"schemaVersion"`
 }

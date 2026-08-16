@@ -1,4 +1,4 @@
-package main
+package functions
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ type (
 )
 
 // Tidy just runs the module tidy
-func (Dev) Tidy() error {
+func Tidy() error {
 	fmt.Println("Running tidy")
 	return sh.RunV(
 		"go",
@@ -22,13 +22,7 @@ func (Dev) Tidy() error {
 }
 
 // Vendor just runs the module vendor
-func (d Dev) Vendor() error {
-	if err := d.Tidy(); err != nil {
-		return err
-	}
-
-	fmt.Println("Running vendor")
-
+func Vendor() error {
 	return sh.RunV(
 		"go",
 		"mod",

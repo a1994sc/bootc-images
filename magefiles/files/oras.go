@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"log"
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -134,7 +136,7 @@ func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (_ *file.S
 	config := ocispec.Image{
 		Platform: ocispec.Platform{
 			OS:           OSLinux,
-			Architecture: OSArchAMD64,
+			Architecture: runtime.GOARCH,
 		},
 		Created: &static,
 		History: []ocispec.History{},
@@ -143,6 +145,8 @@ func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (_ *file.S
 			DiffIDs: []digest.Digest{},
 		},
 	}
+
+	log.Printf("walking %s", folder)
 
 	err = filepath.WalkDir(folder, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -185,6 +189,7 @@ func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (_ *file.S
 			},
 		}
 
+		log.Printf("pushing %s (%s, %d bytes)", fileName, dgst, size)
 		if err := store.Push(ctx, layer, tgz); err != nil {
 			return err
 		}
@@ -196,6 +201,8 @@ func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (_ *file.S
 	if err != nil {
 		return nil, err
 	}
+
+	log.Printf("pushed %d files from %s", len(files), folder)
 
 	configBytes, err := json.Marshal(config)
 	if err != nil {

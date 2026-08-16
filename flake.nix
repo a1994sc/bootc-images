@@ -71,6 +71,11 @@
                 # keep-sorted end
                 end-of-file-fixer.excludes = [
                   ".cz.json"
+                  "vendor/"
+                ];
+                trim-trailing-whitespace.excludes = [
+                  ".cz.json"
+                  "vendor/"
                 ];
               };
             };
