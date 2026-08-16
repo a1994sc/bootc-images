@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -56,58 +57,68 @@ func RemoteRepo(reference string) (oras.Target, error) {
 	return repo, nil
 }
 
-func GenerateDiffID(dir, file string) (dig digest.Digest, filePath string, err error) {
+// GenerateDiffID tars file into tmpDir and returns the digest and size of the
+// resulting tar stream, computed in a single pass while it is written to disk.
+func GenerateDiffID(tmpDir, dir, file string) (dig digest.Digest, filePath string, size int64, err error) {
 	info, err := os.Stat(file)
 	if err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, "", err
-	}
-	tmpDir, err := MakeTempDir("/tmp")
-	if err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, "", err
+		return "", "", 0, err
 	}
 
-	temp := filepath.Join(tmpDir, fmt.Sprintf("%s.tar", filepath.Base(file)))
+	rel := strings.TrimPrefix(file, dir+"/")
+	temp := filepath.Join(tmpDir, strings.ReplaceAll(rel, string(filepath.Separator), "_")+".tar")
 	out, err := os.Create(temp)
 	if err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, "", err
+		return "", "", 0, err
 	}
 	defer out.Close()
 
-	tw := tar.NewWriter(out)
-	defer tw.Close()
+	digester := digest.Canonical.Digester()
+	tw := tar.NewWriter(io.MultiWriter(out, digester.Hash()))
 
 	hdr, err := tar.FileInfoHeader(info, "")
 	if err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, temp, err
+		return "", temp, 0, err
 	}
-	hdr.Name = strings.TrimPrefix(file, fmt.Sprintf("%s/", dir))
+	hdr.Name = rel
 	if err := tw.WriteHeader(hdr); err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, temp, err
+		return "", temp, 0, err
 	}
 
 	src, err := os.Open(file)
 	if err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, temp, err
+		return "", temp, 0, err
 	}
 	defer src.Close()
 
 	if _, err := io.Copy(tw, src); err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, temp, err
+		return "", temp, 0, err
+	}
+	if err := tw.Close(); err != nil {
+		return "", temp, 0, err
 	}
 
-	data, err := os.ReadFile(file)
+	fi, err := out.Stat()
 	if err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, temp, err
+		return "", temp, 0, err
 	}
 
-	return digest.FromBytes(data), temp, nil
+	return digester.Digest(), temp, fi.Size(), nil
 }
 
-func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (*file.Store, error) {
+func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (_ *file.Store, err error) {
 	store, err := file.New(ociDir)
 	if err != nil {
 		return nil, err
 	}
+
+	tmpDir, err := MakeTempDir("/tmp")
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		err = errors.Join(err, os.RemoveAll(tmpDir))
+	}()
 
 	files := []ocispec.Descriptor{}
 	config := ocispec.Image{
@@ -131,34 +142,16 @@ func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (*file.Sto
 			return nil
 		}
 
-		id, f, err := GenerateDiffID(folder, path)
+		dgst, f, size, err := GenerateDiffID(tmpDir, folder, path)
 		if err != nil {
 			return err
-		}
-		defer func() {
-			os.RemoveAll(filepath.Dir(f))
-		}()
-		if id == ocispec.DescriptorEmptyJSON.Digest {
-			return nil
 		}
 
 		tgz, err := os.Open(f)
 		if err != nil {
 			return err
 		}
-
-		info, err := tgz.Stat()
-		if err != nil {
-			return err
-		}
-
-		dgst, err := digest.FromReader(tgz) // consumes f — need to reopen/seek before the real push
-		if err != nil {
-			return err
-		}
-		if _, err := tgz.Seek(0, io.SeekStart); err != nil {
-			return err
-		}
+		defer tgz.Close()
 
 		fileName, err := filepath.Rel(folder, path)
 		if err != nil {
@@ -172,24 +165,27 @@ func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (*file.Sto
 		})
 		config.RootFS.DiffIDs = append(config.RootFS.DiffIDs, dgst)
 
-		file := ocispec.Descriptor{
+		layer := ocispec.Descriptor{
 			MediaType: ocispec.MediaTypeImageLayer,
 			Digest:    dgst,
-			Size:      info.Size(),
+			Size:      size,
 			Annotations: map[string]string{
 				ocispec.AnnotationTitle:   fileName,
 				ocispec.AnnotationCreated: format,
 			},
 		}
 
-		if err := store.Push(ctx, file, tgz); err != nil {
+		if err := store.Push(ctx, layer, tgz); err != nil {
 			return err
 		}
 
-		files = append(files, file)
+		files = append(files, layer)
 
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	configBytes, err := json.Marshal(config)
 	if err != nil {
