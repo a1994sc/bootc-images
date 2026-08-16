@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gabriel-vasile/mimetype"
 	digest "github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"oras.land/oras-go/v2"
@@ -58,23 +57,20 @@ func RemoteRepo(reference string) (oras.Target, error) {
 	return repo, nil
 }
 
-func GenerateDiffID(dir, file string) (digest.Digest, error) {
+func GenerateDiffID(dir, file string) (dig digest.Digest, filePath string, err error) {
 	info, err := os.Stat(file)
 	if err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, err
+		return ocispec.DescriptorEmptyJSON.Digest, "", err
 	}
 	tmpDir, err := MakeTempDir("/tmp")
 	if err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, err
+		return ocispec.DescriptorEmptyJSON.Digest, "", err
 	}
-	defer func() {
-		os.RemoveAll(tmpDir)
-	}()
 
-	temp := filepath.Join(tmpDir, "temp.tar")
+	temp := filepath.Join(tmpDir, fmt.Sprintf("%s.tar", filepath.Base(file)))
 	out, err := os.Create(temp)
 	if err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, err
+		return ocispec.DescriptorEmptyJSON.Digest, "", err
 	}
 	defer out.Close()
 
@@ -83,33 +79,33 @@ func GenerateDiffID(dir, file string) (digest.Digest, error) {
 
 	hdr, err := tar.FileInfoHeader(info, "")
 	if err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, err
+		return ocispec.DescriptorEmptyJSON.Digest, temp, err
 	}
 	hdr.Name = strings.TrimPrefix(file, fmt.Sprintf("%s/", dir))
 	if err := tw.WriteHeader(hdr); err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, err
+		return ocispec.DescriptorEmptyJSON.Digest, temp, err
 	}
 
 	src, err := os.Open(file)
 	if err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, err
+		return ocispec.DescriptorEmptyJSON.Digest, temp, err
 	}
 	defer src.Close()
 
 	if _, err := io.Copy(tw, src); err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, err
+		return ocispec.DescriptorEmptyJSON.Digest, temp, err
 	}
 
 	data, err := os.ReadFile(file)
 	if err != nil {
-		return ocispec.DescriptorEmptyJSON.Digest, err
+		return ocispec.DescriptorEmptyJSON.Digest, temp, err
 	}
 
-	return digest.FromBytes(data), nil
+	return digest.FromBytes(data), temp, nil
 }
 
-func GenerateGZipTarBall(dir string, file string) (string, string, error) {
-	tmpDir, err := MakeTempDir("/tmp")
+func GenerateGZipTarBall(dir string, file string) (filePath string, tmpDir string, err error) {
+	tmpDir, err = MakeTempDir("/tmp")
 	if err != nil {
 		return "", "", err
 	}
@@ -118,7 +114,7 @@ func GenerateGZipTarBall(dir string, file string) (string, string, error) {
 		return "", "", err
 	}
 
-	filePath := filepath.Join(tmpDir, fmt.Sprintf("%s.tar.gz", filepath.Base(file)))
+	filePath = filepath.Join(tmpDir, fmt.Sprintf("%s.tgz", filepath.Base(file)))
 
 	out, err := os.Create(filePath)
 	if err != nil {
@@ -187,46 +183,52 @@ func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (*file.Sto
 			return nil
 		}
 
-		filePath, tmpDir, err := GenerateGZipTarBall(folder, path)
+		id, f, err := GenerateDiffID(folder, path)
 		if err != nil {
 			return err
 		}
-		defer func() {
-			os.RemoveAll(tmpDir)
-		}()
+		if id == ocispec.DescriptorEmptyJSON.Digest {
+			return nil
+		}
 
-		mtype, err := mimetype.DetectFile(filePath)
+		tgz, err := os.Open(f)
 		if err != nil {
 			return err
 		}
 
-		mt, _, _ := strings.Cut(mtype.String(), ";")
-
-		file, err := store.Add(ctx, filepath.Base(filePath), mt, filePath)
+		info, err := tgz.Stat()
 		if err != nil {
 			return err
 		}
+
+		dgst, err := digest.FromReader(tgz) // consumes f — need to reopen/seek before the real push
+		if err != nil {
+			return err
+		}
+		if _, err := tgz.Seek(0, io.SeekStart); err != nil {
+			return err
+		}
+
+		config.RootFS.DiffIDs = append(config.RootFS.DiffIDs, dgst)
 
 		fileName, err := filepath.Rel(folder, path)
 		if err != nil {
 			return err
 		}
 
-		file.Annotations = map[string]string{
-			ocispec.AnnotationTitle:   fileName,
-			ocispec.AnnotationCreated: format,
+		file := ocispec.Descriptor{
+			MediaType: ocispec.MediaTypeImageLayer,
+			Digest:    dgst,
+			Size:      info.Size(),
+			Annotations: map[string]string{
+				ocispec.AnnotationTitle:   fileName,
+				ocispec.AnnotationCreated: format,
+			},
 		}
 
-		id, err := GenerateDiffID(folder, path)
-		if err != nil {
+		if err := store.Push(ctx, file, tgz); err != nil {
 			return err
 		}
-
-		if id == ocispec.DescriptorEmptyJSON.Digest {
-			return nil
-		}
-
-		config.RootFS.DiffIDs = append(config.RootFS.DiffIDs, id)
 
 		files = append(files, file)
 
