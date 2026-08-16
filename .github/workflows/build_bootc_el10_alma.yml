@@ -154,6 +154,7 @@ jobs:
       # needed for login to ghcr
       options: --privileged
     env:
+      DOCKER_CONFIG: /run/containers/0
       IMAGE: |-
         ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma10:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
     steps:
@@ -185,7 +186,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          auth_file_path: /root/.docker/config.json
+          auth_file_path: /run/containers/0/config.json
 
       - name: Create workspace
         run: |-
