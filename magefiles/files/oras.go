@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -48,12 +49,22 @@ func RemoteRepo(authFile, reference string) (oras.Target, error) {
 	if err != nil {
 		return nil, err
 	}
-	repo.PlainHTTP = true // skip TLS for local/insecure registries
+	repo.PlainHTTP = isLocalRegistry(repo.Reference.Host()) // skip TLS for local/insecure registries
 	repo.Client = &auth.Client{
 		Credential: credentials.Credential(store),
 	}
 
 	return repo, nil
+}
+
+// isLocalRegistry reports whether host is a local, insecure registry (e.g.
+// "localhost:5000") that should be accessed over plain HTTP instead of TLS.
+func isLocalRegistry(host string) bool {
+	hostname := host
+	if h, _, err := net.SplitHostPort(host); err == nil {
+		hostname = h
+	}
+	return hostname == "localhost" || hostname == "127.0.0.1" || hostname == "::1"
 }
 
 // GenerateDiffID tars file into tmpDir and returns the digest and size of the

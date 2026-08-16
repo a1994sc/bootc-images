@@ -13,16 +13,52 @@ import (
 	"github.com/a1994sc/bootc-images/magefiles/files"
 	digest "github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	"oras.land/oras-go/v2/registry/remote"
 )
 
 func TestRemoteRepo(t *testing.T) {
-	t.Run("valid reference configures a plain HTTP repository", func(t *testing.T) {
-		target, err := files.RemoteRepo("", "localhost:5000/rpm/package")
-		if err != nil {
-			t.Fatalf("RemoteRepo() error = %v", err)
+	t.Run("local registries use plain HTTP", func(t *testing.T) {
+		for _, reference := range []string{
+			"localhost:5000/rpm/package",
+			"localhost/rpm/package",
+			"127.0.0.1:5000/rpm/package",
+		} {
+			target, err := files.RemoteRepo("", reference)
+			if err != nil {
+				t.Fatalf("RemoteRepo(%q) error = %v", reference, err)
+			}
+			repo, ok := target.(*remote.Repository)
+			if !ok {
+				t.Fatalf("RemoteRepo(%q) returned %T, want *remote.Repository", reference, target)
+			}
+			if !repo.PlainHTTP {
+				t.Fatalf("RemoteRepo(%q).PlainHTTP = false, want true for a local registry", reference)
+			}
 		}
-		if target == nil {
-			t.Fatal("expected a non-nil target")
+	})
+
+	t.Run("remote registries use TLS, not plain HTTP", func(t *testing.T) {
+		// Regression test: PlainHTTP must not be forced on for real
+		// registries. oras-go strips the Authorization header on any
+		// cross-origin redirect (see GHSA-vh4v-2xq2-g5cg), and registries
+		// like ghcr.io 301-redirect plain HTTP requests to HTTPS. Forcing
+		// PlainHTTP here would make every authenticated request silently
+		// lose its credentials on that redirect and fail with 401.
+		for _, reference := range []string{
+			"ghcr.io/owner/repo",
+			"registry.example.com:5000/owner/repo",
+		} {
+			target, err := files.RemoteRepo("", reference)
+			if err != nil {
+				t.Fatalf("RemoteRepo(%q) error = %v", reference, err)
+			}
+			repo, ok := target.(*remote.Repository)
+			if !ok {
+				t.Fatalf("RemoteRepo(%q) returned %T, want *remote.Repository", reference, target)
+			}
+			if repo.PlainHTTP {
+				t.Fatalf("RemoteRepo(%q).PlainHTTP = true, want false for a remote registry", reference)
+			}
 		}
 	})
 
