@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/a1994sc/bootc-images/magefiles/files"
@@ -50,15 +49,15 @@ func Process(ctx context.Context, path string, repo *string, version *string, au
 
 	copyOpts := oras.DefaultCopyOptions
 	copyOpts.PreCopy = func(_ context.Context, desc ocispec.Descriptor) error {
-		log.Printf("pushing %s (%s, %d bytes)", desc.Digest, desc.MediaType, desc.Size)
+		fmt.Printf("pushing %s (%s, %d bytes)\n", desc.Digest, desc.MediaType, desc.Size)
 		return nil
 	}
 	copyOpts.PostCopy = func(_ context.Context, desc ocispec.Descriptor) error {
-		log.Printf("pushed %s", desc.Digest)
+		fmt.Printf("pushed %s\n", desc.Digest)
 		return nil
 	}
 	copyOpts.OnCopySkipped = func(_ context.Context, desc ocispec.Descriptor) error {
-		log.Printf("skipping %s, already present on the registry", desc.Digest)
+		fmt.Printf("skipping %s, already present on the registry\n", desc.Digest)
 		return nil
 	}
 

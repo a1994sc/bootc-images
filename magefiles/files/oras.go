@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"net"
 	"os"
 	"path/filepath"
@@ -146,7 +145,7 @@ func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (_ *file.S
 		},
 	}
 
-	log.Printf("walking %s", folder)
+	fmt.Printf("walking %s\n", folder)
 
 	err = filepath.WalkDir(folder, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -189,7 +188,7 @@ func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (_ *file.S
 			},
 		}
 
-		log.Printf("pushing %s (%s, %d bytes)", fileName, dgst, size)
+		fmt.Printf("pushing %s (%s, %d bytes)\n", fileName, dgst, size)
 		if err := store.Push(ctx, layer, tgz); err != nil {
 			return err
 		}
@@ -202,7 +201,7 @@ func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (_ *file.S
 		return nil, err
 	}
 
-	log.Printf("pushed %d files from %s", len(files), folder)
+	fmt.Printf("pushed %d files from %s\n", len(files), folder)
 
 	configBytes, err := json.Marshal(config)
 	if err != nil {
