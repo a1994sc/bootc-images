@@ -173,6 +173,11 @@ jobs:
           dnf install @core @standard yq container-selinux ansible-core \
             --releasever ${{ env.MAJOR }} --assumeyes --downloadonly --destdir /root/rpm --installroot /root/rpm --nodocs --refresh
 
+      - name: Create local repo files
+        run: |-
+          rm -rf /root/rpm/var /root/rpm/usr
+          createrepo /root/rpm
+
       - name: Upload the package to registry
         run: |-
           go run -mod=vendor ./main.go process /root/rpm \
