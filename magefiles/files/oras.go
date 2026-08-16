@@ -1,4 +1,4 @@
-package main
+package files
 
 import (
 	"archive/tar"
@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/a1994sc/bootc-images/magefiles/utils"
 	digest "github.com/opencontainers/go-digest"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"oras.land/oras-go/v2"
@@ -112,7 +113,7 @@ func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (_ *file.S
 		return nil, err
 	}
 
-	tmpDir, err := MakeTempDir("/tmp")
+	tmpDir, err := utils.MakeTempDir("/tmp")
 	if err != nil {
 		return nil, err
 	}

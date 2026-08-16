@@ -24,6 +24,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/a1994sc/bootc-images/magefiles/files"
+	"github.com/a1994sc/bootc-images/magefiles/utils"
 	"github.com/magefile/mage/mg"
 	"github.com/magefile/mage/sh"
 	"oras.land/oras-go/v2"
@@ -44,7 +46,7 @@ func (Dev) Tidy() error {
 }
 
 func (Dev) Digest(ctx context.Context) (err error) {
-	tmpDir, err := MakeTempDir("/tmp")
+	tmpDir, err := utils.MakeTempDir("/tmp")
 	if err != nil {
 		return err
 	}
@@ -57,11 +59,11 @@ func (Dev) Digest(ctx context.Context) (err error) {
 		return err
 	}
 
-	local, err := UploadDirectory(ctx, tmpDir, filepath.Join(dir, ".direnv", "rpm"), "latest")
+	local, err := files.UploadDirectory(ctx, tmpDir, filepath.Join(dir, ".direnv", "rpm"), "latest")
 	if err != nil {
 		return err
 	}
-	remote, err := RemoteRepo("localhost:5000/rpm/package")
+	remote, err := files.RemoteRepo("localhost:5000/rpm/package")
 	if err != nil {
 		return err
 	}
