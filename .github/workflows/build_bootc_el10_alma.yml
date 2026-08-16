@@ -13,6 +13,9 @@ on:
       - 'almalinux/10\.[0-9]+-[0-9]+'
   schedule:
     - cron: '15 0 * * 0'
+  pull_request:
+    branches:
+      - main
 
 env:
   DISTRO: "almalinux"
@@ -160,7 +163,10 @@ jobs:
 
           dnf config-manager --set-enabled crb
 
-          dnf install --refresh --assumeyes podman fuse-overlayfs createrepo file
+          dnf install --refresh --assumeyes podman fuse-overlayfs createrepo file golang
+
+      - name: Clone the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install oras tool
         uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
@@ -179,7 +185,7 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          auth_file_path: /run/containers/0/auth.json
+          auth_file_path: /root/.docker/config.json
 
       - name: Create workspace
         run: |-
@@ -190,27 +196,10 @@ jobs:
           dnf install @core @standard yq container-selinux ansible-core \
             --releasever ${{ env.MAJOR }} --assumeyes --downloadonly --destdir /root/rpm --installroot /root/rpm --nodocs --refresh
 
-      - name: Create local repo files
+      - name: Download packages
         run: |-
-          rm -rf /root/rpm/var /root/rpm/usr
+          go run ./magefiles/main.go process /root/rpm -repo="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma10" -version="${{ needs.info.outputs.tag }}-${{ matrix.platform }}"
 
-      - name: Install yq
-        run: |-
-          dnf install --assumeyes --releasever ${{ env.MAJOR }} yq
-
-      - name: Upload to ghcr staging
-        working-directory: /root/rpm
-        run: |-
-          find /root/rpm -type f | sed 's#/root/rpm/##g' | xargs -I {} bash -c 'echo {}:$(file -b --mime-type {})' | \
-            awk '
-              BEGIN {
-                printf "oras push --artifact-type application/vnd.adrp.package.bundle.v1 "
-                printf "--artifact-platform 'linux/${{ matrix.platform }}' "
-                printf "--registry-config /run/containers/0/auth.json --no-tty ${{ env.IMAGE }}"
-              } {
-                printf " %s ", $0
-              } END{print ""}' | \
-            xargs -I {} sh -c "eval {}"
     outputs:
       tag: ${{ needs.info.outputs.tag }}
 

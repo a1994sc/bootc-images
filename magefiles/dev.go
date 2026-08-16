@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/a1994sc/bootc-images/magefiles/files"
 	"github.com/a1994sc/bootc-images/magefiles/utils"
@@ -45,7 +44,16 @@ func (Dev) Tidy() error {
 	)
 }
 
-func (Dev) Digest(ctx context.Context) (err error) {
+// Process will take in a directory and create a docker compatible image used as an image volume mount
+func Process(ctx context.Context, path string, repo *string, version *string) (err error) {
+	registry, tag := "localhost:5000/rpm", "latest"
+	if repo != nil {
+		registry = *repo
+	}
+	if version != nil {
+		tag = *version
+	}
+
 	tmpDir, err := utils.MakeTempDir("/tmp")
 	if err != nil {
 		return err
@@ -54,21 +62,16 @@ func (Dev) Digest(ctx context.Context) (err error) {
 		err = errors.Join(err, os.RemoveAll(tmpDir))
 	}()
 
-	dir, err := os.Getwd()
+	local, err := files.UploadDirectory(ctx, tmpDir, path, tag)
+	if err != nil {
+		return err
+	}
+	remote, err := files.RemoteRepo(registry)
 	if err != nil {
 		return err
 	}
 
-	local, err := files.UploadDirectory(ctx, tmpDir, filepath.Join(dir, ".direnv", "rpm"), "latest")
-	if err != nil {
-		return err
-	}
-	remote, err := files.RemoteRepo("localhost:5000/rpm/package")
-	if err != nil {
-		return err
-	}
-
-	desc, err := oras.Copy(ctx, local, "latest", remote, "latest", oras.DefaultCopyOptions)
+	desc, err := oras.Copy(ctx, local, tag, remote, tag, oras.DefaultCopyOptions)
 
 	fmt.Println(desc.Digest)
 

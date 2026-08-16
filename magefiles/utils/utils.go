@@ -11,7 +11,7 @@ const (
 	ReadWriteExecuteUser = 0700
 )
 
-// MakeTempDir creates a temp directory with the zarf- prefix.
+// MakeTempDir creates a temp directory with the bootc-images- prefix.
 func MakeTempDir(basePath string) (string, error) {
 	if basePath != "" {
 		if err := CreateDirectory(basePath, ReadWriteExecuteUser); err != nil {
@@ -33,7 +33,7 @@ func CreateDirectory(path string, mode os.FileMode) error {
 	return nil
 }
 
-// InvalidPath checks if the given path is valid (if it is a permissions error it is there we just don't have access)
+// InvalidPath checks if the given path is invalid. A permissions error does not count, since that means the path exists but we just don't have access to it.
 func InvalidPath(path string) bool {
 	_, err := os.Stat(path)
 	return !os.IsPermission(err) && err != nil
