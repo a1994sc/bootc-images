@@ -37,8 +37,8 @@ var (
 	format = time.Date(2000, time.January, 1, 0, 0, 0, 0, time.UTC).Format(time.RFC3339)
 )
 
-func RemoteRepo(reference string) (oras.Target, error) {
-	store, err := credentials.NewStoreFromDocker(credentials.StoreOptions{
+func RemoteRepo(authFile, reference string) (oras.Target, error) {
+	store, err := credentials.NewStore(authFile, credentials.StoreOptions{
 		DetectDefaultNativeStore: true,
 	})
 	if err != nil {
@@ -50,9 +50,7 @@ func RemoteRepo(reference string) (oras.Target, error) {
 	}
 	repo.PlainHTTP = true // skip TLS for local/insecure registries
 	repo.Client = &auth.Client{
-		Credential: auth.CredentialFunc(func(ctx context.Context, host string) (auth.Credential, error) {
-			return store.Get(ctx, host)
-		}),
+		Credential: credentials.Credential(store),
 	}
 
 	return repo, nil

@@ -45,14 +45,19 @@ func (Dev) Tidy() error {
 }
 
 // Process will take in a directory and create a docker compatible image used as an image volume mount
-func Process(ctx context.Context, path string, repo *string, version *string) (err error) {
-	registry, tag := "localhost:5000/rpm", "latest"
+func Process(ctx context.Context, path string, repo *string, version *string, auth *string) (err error) {
+	registry, tag, authFile := "localhost:5000/rpm", "latest", "~/.docker/config.json"
 	if repo != nil {
 		registry = *repo
 	}
 	if version != nil {
 		tag = *version
 	}
+	if auth != nil {
+		authFile = *auth
+	}
+
+	fmt.Printf("will try to upload\n%s:%s\n", registry, tag)
 
 	tmpDir, err := utils.MakeTempDir("/tmp")
 	if err != nil {
@@ -62,11 +67,18 @@ func Process(ctx context.Context, path string, repo *string, version *string) (e
 		err = errors.Join(err, os.RemoveAll(tmpDir))
 	}()
 
+	authFile, err = utils.GetAbsHomePath(authFile)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(authFile)
+
 	local, err := files.UploadDirectory(ctx, tmpDir, path, tag)
 	if err != nil {
 		return err
 	}
-	remote, err := files.RemoteRepo(registry)
+	remote, err := files.RemoteRepo(authFile, registry)
 	if err != nil {
 		return err
 	}

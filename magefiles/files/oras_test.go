@@ -17,7 +17,7 @@ import (
 
 func TestRemoteRepo(t *testing.T) {
 	t.Run("valid reference configures a plain HTTP repository", func(t *testing.T) {
-		target, err := files.RemoteRepo("localhost:5000/rpm/package")
+		target, err := files.RemoteRepo("", "localhost:5000/rpm/package")
 		if err != nil {
 			t.Fatalf("RemoteRepo() error = %v", err)
 		}
@@ -27,7 +27,7 @@ func TestRemoteRepo(t *testing.T) {
 	})
 
 	t.Run("invalid reference returns an error", func(t *testing.T) {
-		_, err := files.RemoteRepo("not a valid reference!!")
+		_, err := files.RemoteRepo("", "not a valid reference!!")
 		if err == nil {
 			t.Fatal("expected an error for an invalid reference, got nil")
 		}
