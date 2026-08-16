@@ -57,8 +57,6 @@ func Process(ctx context.Context, path string, repo *string, version *string, au
 		authFile = *auth
 	}
 
-	fmt.Printf("will try to upload\n%s:%s\n", registry, tag)
-
 	tmpDir, err := utils.MakeTempDir("/tmp")
 	if err != nil {
 		return err
@@ -71,8 +69,6 @@ func Process(ctx context.Context, path string, repo *string, version *string, au
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(authFile)
 
 	local, err := files.UploadDirectory(ctx, tmpDir, path, tag)
 	if err != nil {

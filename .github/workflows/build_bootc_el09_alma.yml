@@ -13,6 +13,9 @@ on:
       - 'almalinux/9\.[0-9]+-[0-9]+'
   schedule:
     - cron: '15 0 * * 0'
+  pull_request:
+    branches:
+      - main
 
 env:
   DISTRO: "almalinux"
@@ -82,19 +85,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Get container tools into builder
-        run: |-
+        run: |
           dnf -y install podman buildah skopeo fuse-overlayfs
 
-      # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
-      - name: Workaround open podman-login action issue
-        env:
-          auth: "{ \"auths\": {} }"
-        run: |
-          mkdir -p $HOME/.docker
-          echo $auth > $HOME/.docker/config.json
-
       - name: Log in to the GitHub Container registry
-        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
+        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -108,16 +103,8 @@ jobs:
           image: ${{ env.IMAGE_NAME }}
           tags: latest ${{ needs.info.outputs.tag }}
           containerfiles: |-
-            el09/${{ env.DISTRO }}/Containerfile
+            el10/${{ env.DISTRO }}/Containerfile
           context: ./.
-
-      - name: Log in to the GitHub Container registry
-        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          auth_file_path: /run/containers/0/auth.json
 
       - name: Re-tag the built image
         run: |-
@@ -151,6 +138,7 @@ jobs:
       # needed for login to ghcr
       options: --privileged
     env:
+      DOCKER_CONFIG: /run/containers/0
       IMAGE: |-
         ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma9:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
     steps:
@@ -160,18 +148,13 @@ jobs:
 
           dnf config-manager --set-enabled crb
 
-          dnf install --refresh --assumeyes podman fuse-overlayfs createrepo file
+          dnf install --refresh --assumeyes podman fuse-overlayfs createrepo file golang
+
+      - name: Clone the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install oras tool
         uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
-
-      # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
-      - name: Workaround open podman-login action issue
-        env:
-          auth: "{ \"auths\": {} }"
-        run: |
-          mkdir -p $HOME/.docker
-          echo $auth > $HOME/.docker/config.json
 
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
@@ -190,24 +173,12 @@ jobs:
           dnf install @core @standard yq container-selinux ansible-core \
             --releasever ${{ env.MAJOR }} --assumeyes --downloadonly --destdir /root/rpm --installroot /root/rpm --nodocs --refresh
 
-      - name: Create local repo files
+      - name: Upload the package to registry
         run: |-
-          rm -rf /root/rpm/var /root/rpm/usr
-          createrepo /root/rpm
-
-      - name: Upload to ghcr staging
-        working-directory: /root/rpm
-        run: |-
-          find /root/rpm -type f | sed 's#/root/rpm/##g' | xargs -I {} bash -c 'echo {}:$(file -b --mime-type {})' | \
-            awk '
-              BEGIN {
-                printf "oras push --artifact-type application/vnd.adrp.package.bundle.v1 "
-                printf "--artifact-platform 'linux/${{ matrix.platform }}' "
-                printf "--registry-config /run/containers/0/auth.json --no-tty ${{ env.IMAGE }}"
-              } {
-                printf " %s ", $0
-              } END{print ""}' | \
-            xargs -I {} sh -c "eval {}"
+          go run ./magefiles/main.go process /root/rpm \
+            -auth="/run/containers/0/config.json" \
+            -repo="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma10" \
+            -version="${{ needs.info.outputs.tag }}-${{ matrix.platform }}"
     outputs:
       tag: ${{ needs.info.outputs.tag }}
 

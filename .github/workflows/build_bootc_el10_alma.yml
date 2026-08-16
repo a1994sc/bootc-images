@@ -88,16 +88,8 @@ jobs:
         run: |
           dnf -y install podman buildah skopeo fuse-overlayfs
 
-      # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
-      - name: Workaround open podman-login action issue
-        env:
-          auth: "{ \"auths\": {} }"
-        run: |
-          mkdir -p $HOME/.docker
-          echo $auth > $HOME/.docker/config.json
-
       - name: Log in to the GitHub Container registry
-        uses: redhat-actions/podman-login@4934294ad0449894bcd1e9f191899d7292469603 # v1.7
+        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -113,14 +105,6 @@ jobs:
           containerfiles: |-
             el10/${{ env.DISTRO }}/Containerfile
           context: ./.
-
-      - name: Log in to the GitHub Container registry
-        uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          auth_file_path: /run/containers/0/auth.json
 
       - name: Re-tag the built image
         run: |-
@@ -172,21 +156,13 @@ jobs:
       - name: Install oras tool
         uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
 
-      # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
-      - name: Workaround open podman-login action issue
-        env:
-          auth: "{ \"auths\": {} }"
-        run: |
-          mkdir -p $HOME/.docker
-          echo $auth > $HOME/.docker/config.json
-
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          auth_file_path: /run/containers/0/config.json
+          auth_file_path: /run/containers/0/auth.json
 
       - name: Create workspace
         run: |-
@@ -197,13 +173,12 @@ jobs:
           dnf install @core @standard yq container-selinux ansible-core \
             --releasever ${{ env.MAJOR }} --assumeyes --downloadonly --destdir /root/rpm --installroot /root/rpm --nodocs --refresh
 
-      - name: Download packages
+      - name: Upload the package to registry
         run: |-
           go run ./magefiles/main.go process /root/rpm \
             -auth="/run/containers/0/config.json" \
             -repo="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma10" \
             -version="${{ needs.info.outputs.tag }}-${{ matrix.platform }}"
-
     outputs:
       tag: ${{ needs.info.outputs.tag }}
 
