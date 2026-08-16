@@ -138,7 +138,7 @@ jobs:
       # needed for login to ghcr
       options: --privileged
     env:
-      DOCKER_CONFIG: /run/containers/0
+      REGISTRY_AUTH_FILE: /run/containers/0/auth.json
       IMAGE: |-
         ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma9:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
     steps:
@@ -176,7 +176,7 @@ jobs:
       - name: Upload the package to registry
         run: |-
           go run ./magefiles/main.go process /root/rpm \
-            -auth="/run/containers/0/config.json" \
+            -auth="/run/containers/0/auth.json" \
             -repo="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma10" \
             -version="${{ needs.info.outputs.tag }}-${{ matrix.platform }}"
     outputs:
