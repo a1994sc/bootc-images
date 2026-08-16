@@ -57,7 +57,7 @@ func (Dev) Digest(ctx context.Context) (err error) {
 		return err
 	}
 
-	local, err := UploadDirectory(ctx, tmpDir, filepath.Join(dir, "test"), "latest")
+	local, err := UploadDirectory(ctx, tmpDir, filepath.Join(dir, ".direnv", "rpm"), "latest")
 	if err != nil {
 		return err
 	}

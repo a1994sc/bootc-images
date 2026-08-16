@@ -116,6 +116,7 @@ func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (*file.Sto
 			Architecture: OSArchAMD64,
 		},
 		Created: &static,
+		History: []ocispec.History{},
 		RootFS: ocispec.RootFS{
 			Type:    "layers",
 			DiffIDs: []digest.Digest{},
@@ -159,12 +160,17 @@ func UploadDirectory(ctx context.Context, ociDir, folder, tag string) (*file.Sto
 			return err
 		}
 
-		config.RootFS.DiffIDs = append(config.RootFS.DiffIDs, dgst)
-
 		fileName, err := filepath.Rel(folder, path)
 		if err != nil {
 			return err
 		}
+
+		config.History = append(config.History, ocispec.History{
+			Created:   &static,
+			Comment:   "xyz.adrp.file.v0",
+			CreatedBy: fmt.Sprintf("ADD %s /", fileName),
+		})
+		config.RootFS.DiffIDs = append(config.RootFS.DiffIDs, dgst)
 
 		file := ocispec.Descriptor{
 			MediaType: ocispec.MediaTypeImageLayer,
