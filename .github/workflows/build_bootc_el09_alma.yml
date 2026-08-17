@@ -76,6 +76,8 @@ jobs:
       - info
     permissions:
       packages: write
+    env:
+      REGISTRY_AUTH_FILE: /run/containers/0/auth.json
     container:
       # renovate: datasource=docker
       image: quay.io/almalinuxorg/9-base:9.8-20260602
@@ -111,8 +113,6 @@ jobs:
           podman tag ${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
 
       - name: Push the built image
-        env:
-          REGISTRY_AUTH_FILE: /run/containers/0/auth.json
         run: |-
           podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
     outputs:
@@ -190,15 +190,15 @@ jobs:
   merge:
     name: Merge artifacts
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        artifact:
-          - "bootc"
-          - "rpm"
     needs:
       - build-bootc
       - build-rpm
+    strategy:
+      fail-fast: false
+      matrix:
+        type:
+          - bootc
+          - rpm
     steps:
       - name: Install oras tool
         uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
@@ -213,10 +213,10 @@ jobs:
       - name: Create manifest list and pushes
         run: |-
           oras manifest index create \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/alma${{ env.MAJOR }}:latest \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.type }}/alma${{ env.MAJOR }}:latest \
             ${{ needs.build-bootc.outputs.tag }}-amd64 ${{ needs.build-bootc.outputs.tag }}-arm64
           oras manifest index create \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/alma${{ env.MAJOR }}:${{ needs.build-bootc.outputs.tag }} \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.type }}/alma${{ env.MAJOR }}:${{ needs.build-bootc.outputs.tag }} \
             ${{ needs.build-bootc.outputs.tag }}-amd64 ${{ needs.build-bootc.outputs.tag }}-arm64
     outputs:
       tag: ${{ needs.build-bootc.outputs.tag }}
@@ -235,9 +235,6 @@ jobs:
         platform:
           - amd64
           - arm64
-        flavor:
-          - rpm
-          - bootc
     permissions:
       packages: write
     steps:
