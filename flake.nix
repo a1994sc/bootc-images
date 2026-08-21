@@ -2,6 +2,10 @@
   description = "Nix packages";
   inputs = {
     # keep-sorted start block=yes case=no
+    flake-utils = {
+      inputs.systems.follows = "systems";
+      url = "github:numtide/flake-utils";
+    };
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable-small";
     pre-commit-hooks = {
       inputs.nixpkgs.follows = "nixpkgs";
@@ -11,10 +15,6 @@
     treefmt-nix = {
       inputs.nixpkgs.follows = "nixpkgs";
       url = "github:numtide/treefmt-nix";
-    };
-    flake-utils = {
-      inputs.systems.follows = "systems";
-      url = "github:numtide/flake-utils";
     };
     # keep-sorted end
   };
@@ -60,24 +60,29 @@
           checks = {
             pre-commit-check = inputs.pre-commit-hooks.lib.${system}.run {
               src = ./.;
-              hooks = {
-                # keep-sorted start case=no
-                check-executables-have-shebangs.enable = true;
-                check-shebang-scripts-are-executable.enable = true;
-                detect-private-keys.enable = true;
-                end-of-file-fixer.enable = true;
-                nixfmt-rfc-style.enable = true;
-                trim-trailing-whitespace.enable = true;
-                # keep-sorted end
-                end-of-file-fixer.excludes = [
-                  ".cz.json"
-                  "vendor/"
-                ];
-                trim-trailing-whitespace.excludes = [
-                  ".cz.json"
-                  "vendor/"
-                ];
-              };
+              hooks =
+                let
+                  excludes = [
+                    ".cz.json"
+                    "vendor/"
+                  ];
+                in
+                {
+                  # keep-sorted start case=no
+                  check-executables-have-shebangs.enable = true;
+                  check-executables-have-shebangs.excludes = excludes;
+                  check-shebang-scripts-are-executable.enable = true;
+                  check-shebang-scripts-are-executable.excludes = excludes;
+                  detect-private-keys.enable = true;
+                  detect-private-keys.excludes = excludes;
+                  end-of-file-fixer.enable = true;
+                  end-of-file-fixer.excludes = excludes;
+                  nixfmt-rfc-style.enable = true;
+                  nixfmt-rfc-style.excludes = excludes;
+                  trim-trailing-whitespace.enable = true;
+                  trim-trailing-whitespace.excludes = excludes;
+                  # keep-sorted end
+                };
             };
           };
         }

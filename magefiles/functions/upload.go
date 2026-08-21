@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/a1994sc/bootc-images/magefiles/files"
+	"github.com/a1994sc/bootc-images/magefiles/image"
 	"github.com/a1994sc/bootc-images/magefiles/utils"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"oras.land/oras-go/v2"
@@ -25,6 +26,8 @@ func Process(ctx context.Context, path string, repo *string, version *string, au
 		authFile = *auth
 	}
 
+	imageReg := fmt.Sprintf("%s:%s", registry, tag)
+
 	tmpDir, err := utils.MakeTempDir("/tmp")
 	if err != nil {
 		return err
@@ -38,10 +41,19 @@ func Process(ctx context.Context, path string, repo *string, version *string, au
 		return err
 	}
 
-	local, err := files.UploadDirectory(ctx, tmpDir, path, tag)
+	builder, err := image.NewImageVolume(tmpDir, "linux", "amd64")
 	if err != nil {
 		return err
 	}
+
+	defer func() {
+		err = errors.Join(err, builder.Clean())
+	}()
+
+	if err := builder.AddDirectory(ctx, path, imageReg); err != nil {
+		return err
+	}
+
 	remote, err := files.RemoteRepo(authFile, registry)
 	if err != nil {
 		return err
@@ -61,7 +73,7 @@ func Process(ctx context.Context, path string, repo *string, version *string, au
 		return nil
 	}
 
-	desc, err := oras.Copy(ctx, local, tag, remote, tag, copyOpts)
+	desc, err := oras.Copy(ctx, builder.Store(), imageReg, remote, imageReg, copyOpts)
 
 	fmt.Println(desc.Digest)
 
