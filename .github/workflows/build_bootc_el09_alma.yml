@@ -179,14 +179,14 @@ jobs:
           createrepo /root/rpm
 
       - name: Create tar ball from directory
-        working-directory: /root
         run: |-
           go run -mod=vendor ./main.go process /root/rpm \
             -os=linux -arch="${{ matrix.platform }}" \
             -repo="adrp.xyz/rpm" \
-            -version="latest"
+            -version="latest" \
+            -tar="/root/adrp.xyz_rpm.tar"
 
-      - name: ""
+      - name: Upload tarball to ghcr
         run: |-
           oras cp --from-oci-layout --no-tty /root/adrp.xyz_rpm.tar:latest ${{ env.IMAGE }}
     outputs:

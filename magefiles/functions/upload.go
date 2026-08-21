@@ -13,24 +13,26 @@ import (
 )
 
 // Process will take in a directory and create a docker compatible image used as an image volume mount
-func Process(ctx context.Context, path string, repo *string, version *string, platOS *string, platArch *string) (err error) {
-	registry, tag, osRef, arch := "localhost:5000/rpm", "latest", "linux", "amd64"
+func Process(ctx context.Context, path string, repo *string, version *string, platOS *string, platArch *string, tarBall *string) (err error) {
+	registry, tag, osRef, arch, tar := "localhost:5000/rpm", "latest", "linux", "amd64", ""
 	if repo != nil {
 		registry = *repo
 	}
 	if version != nil {
 		tag = *version
 	}
+	imageReg := fmt.Sprintf("%s:%s", registry, tag)
 	if platOS != nil {
 		osRef = *platOS
 	}
 	if platArch != nil {
 		arch = *platArch
 	}
-
-	imageReg := fmt.Sprintf("%s:%s", registry, tag)
-
-	output := archive.ImageRefToTar(imageReg)
+	if tarBall != nil {
+		tar = *tarBall
+	} else if tar == "" {
+		tar = archive.ImageRefToTar(imageReg)
+	}
 
 	tmpDir, err := utils.MakeTempDir("/tmp")
 	if err != nil {
@@ -57,7 +59,7 @@ func Process(ctx context.Context, path string, repo *string, version *string, pl
 		return err
 	}
 
-	out, err := os.Create(output)
+	out, err := os.Create(tar)
 	if err != nil {
 		return err
 	}
