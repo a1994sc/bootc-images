@@ -178,12 +178,17 @@ jobs:
           rm -rf /root/rpm/var /root/rpm/usr
           createrepo /root/rpm
 
-      - name: Upload the package to registry
+      - name: Create tar ball from directory
+        working-directory: /root
         run: |-
           go run -mod=vendor ./main.go process /root/rpm \
-            -auth="/run/containers/0/auth.json" \
-            -repo="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma10" \
-            -version="${{ needs.info.outputs.tag }}-${{ matrix.platform }}"
+            -os=linux -arch="${{ matrix.platform }}" \
+            -repo="adrp.xyz/rpm" \
+            -version="latest"
+
+      - name: ""
+        run: |-
+          oras cp --from-oci-layout --no-tty /root/adrp.xyz_rpm.tar:latest  ${{ env.IMAGE }}
     outputs:
       tag: ${{ needs.info.outputs.tag }}
 

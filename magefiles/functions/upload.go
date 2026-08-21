@@ -6,27 +6,31 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/a1994sc/bootc-images/magefiles/files"
-	"github.com/a1994sc/bootc-images/magefiles/image"
 	"github.com/a1994sc/bootc-images/magefiles/utils"
-	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
-	"oras.land/oras-go/v2"
+	"github.com/zarf-dev/zarf/src/pkg/logger"
+	"github.com/zarf-dev/zarf/src/pkg/zoci/archive"
+	"github.com/zarf-dev/zarf/src/pkg/zoci/image"
 )
 
 // Process will take in a directory and create a docker compatible image used as an image volume mount
-func Process(ctx context.Context, path string, repo *string, version *string, auth *string) (err error) {
-	registry, tag, authFile := "localhost:5000/rpm", "latest", "~/.docker/config.json"
+func Process(ctx context.Context, path string, repo *string, version *string, platOS *string, platArch *string) (err error) {
+	registry, tag, osRef, arch := "localhost:5000/rpm", "latest", "linux", "amd64"
 	if repo != nil {
 		registry = *repo
 	}
 	if version != nil {
 		tag = *version
 	}
-	if auth != nil {
-		authFile = *auth
+	if platOS != nil {
+		osRef = *platOS
+	}
+	if platArch != nil {
+		arch = *platArch
 	}
 
 	imageReg := fmt.Sprintf("%s:%s", registry, tag)
+
+	output := archive.ImageRefToTar(imageReg)
 
 	tmpDir, err := utils.MakeTempDir("/tmp")
 	if err != nil {
@@ -36,46 +40,36 @@ func Process(ctx context.Context, path string, repo *string, version *string, au
 		err = errors.Join(err, os.RemoveAll(tmpDir))
 	}()
 
-	authFile, err = utils.GetAbsHomePath(authFile)
+	iv, err := image.New(tmpDir, osRef, arch)
 	if err != nil {
 		return err
 	}
-
-	builder, err := image.NewImageVolume(tmpDir, "linux", "amd64")
-	if err != nil {
-		return err
-	}
-
 	defer func() {
-		err = errors.Join(err, builder.Clean())
+		if err := iv.Clean(); err != nil {
+			logger.From(ctx).Debug("failed to clean image volume workspace", "error", err)
+		}
+		if err := os.RemoveAll(tmpDir); err != nil {
+			logger.From(ctx).Debug("failed to remove staging directory", "error", err)
+		}
 	}()
 
-	if err := builder.AddDirectory(ctx, path, imageReg); err != nil {
+	if err := iv.AddDirectory(ctx, path, imageReg); err != nil {
 		return err
 	}
 
-	remote, err := files.RemoteRepo(authFile, registry)
+	out, err := os.Create(output)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if closeErr := out.Close(); closeErr != nil {
+			logger.From(ctx).Debug("failed to close image volume archive", "error", closeErr)
+		}
+	}()
 
-	copyOpts := oras.DefaultCopyOptions
-	copyOpts.PreCopy = func(_ context.Context, desc ocispec.Descriptor) error {
-		fmt.Printf("pushing %s (%s, %d bytes)\n", desc.Digest, desc.MediaType, desc.Size)
-		return nil
+	if err := iv.WriteTar(ctx, imageReg, out); err != nil {
+		return err
 	}
-	copyOpts.PostCopy = func(_ context.Context, desc ocispec.Descriptor) error {
-		fmt.Printf("pushed %s\n", desc.Digest)
-		return nil
-	}
-	copyOpts.OnCopySkipped = func(_ context.Context, desc ocispec.Descriptor) error {
-		fmt.Printf("skipping %s, already present on the registry\n", desc.Digest)
-		return nil
-	}
-
-	desc, err := oras.Copy(ctx, builder.Store(), imageReg, remote, imageReg, copyOpts)
-
-	fmt.Println(desc.Digest)
 
 	return err
 }
