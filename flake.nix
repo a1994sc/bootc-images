@@ -36,10 +36,7 @@
             {
               # keep-sorted start block=yes
               programs.keep-sorted.enable = true;
-              programs.nixfmt = {
-                enable = true;
-                package = pkgs.nixfmt-rfc-style;
-              };
+              programs.nixfmt.enable = true;
               projectRootFile = "flake.nix";
               # keep-sorted end
             }
