@@ -9,6 +9,7 @@ import (
 	"github.com/a1994sc/bootc-images/src/pkg/utils"
 	"github.com/a1994sc/bootc-images/src/pkg/zoci/archive"
 	"github.com/a1994sc/bootc-images/src/pkg/zoci/image"
+	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 const (
@@ -18,7 +19,7 @@ const (
 )
 
 // Process will take in a directory and create a docker compatible image used as an image volume mount
-func Process(ctx context.Context, path string, repo *string, version *string, platOS *string, platArch *string, tarBall *string) (err error) {
+func Process(ctx context.Context, path string, repo *string, version *string, platOS *string, platArch *string, tarBall *string, maxLayers *int) (err error) {
 	registry, tag, osRef, arch, tar := "localhost:5000/rpm", "latest", "linux", "amd64", ""
 	if repo != nil {
 		registry = *repo
@@ -60,9 +61,13 @@ func Process(ctx context.Context, path string, repo *string, version *string, pl
 		}
 	}()
 
-	iv.Licenses = license
-	iv.Source = source
-	iv.Description = description
+	iv.Annotations[ocispec.AnnotationDescription] = description
+	iv.Annotations[ocispec.AnnotationSource] = source
+	iv.Annotations[ocispec.AnnotationLicenses] = license
+
+	if maxLayers != nil {
+		iv.MaxLayers = *maxLayers
+	}
 
 	if err := iv.AddDirectory(ctx, path, imageReg); err != nil {
 		return err

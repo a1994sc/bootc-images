@@ -38,9 +38,10 @@ type Volume struct {
 	// via AddFile/AddDirectory. The zero value behaves as
 	// VolumeCompressionUncompressed.
 	Compression VolumeCompression
-	Licenses    string
-	Description string
-	Source      string
+	// MaxLayers caps the number of layers AddFile will push. New sets it to
+	// DefaultMaxLayers; set to 0 to disable the cap.
+	MaxLayers   int
+	Annotations map[string]string
 	layers      []ocispec.Descriptor
 	tmp         string
 	root        string
@@ -73,6 +74,10 @@ func (v *Volume) Archive() *archive.OCIStore {
 // blob, while the diff ID recorded in RootFS.DiffIDs always identifies the
 // uncompressed tar content, independent of v.Compression.
 func (v *Volume) AddFile(ctx context.Context, dir, path string) (_ ocispec.Descriptor, err error) {
+	if v.MaxLayers > 0 && len(v.layers) >= v.MaxLayers {
+		return ocispec.Descriptor{}, fmt.Errorf("%w: max %d, adding %s would exceed it", ErrTooManyLayers, v.MaxLayers, path)
+	}
+
 	fileName, err := filepath.Rel(dir, path)
 	if err != nil {
 		return ocispec.Descriptor{}, err
@@ -189,19 +194,7 @@ func (v *Volume) AddDirectory(ctx context.Context, folder, ref string) error {
 	}
 	fmt.Println("pushed image volume config", "digest", configDesc.Digest, "size", configDesc.Size)
 
-	annotations := map[string]string{
-		ocispec.AnnotationCreated: format,
-	}
-
-	if v.Description != "" {
-		annotations[ocispec.AnnotationDescription] = v.Description
-	}
-	if v.Source != "" {
-		annotations[ocispec.AnnotationSource] = v.Source
-	}
-	if v.Licenses != "" {
-		annotations[ocispec.AnnotationLicenses] = v.Licenses
-	}
+	v.Annotations[ocispec.AnnotationCreated] = format
 
 	manifestDesc, err := oras.PackManifest(
 		ctx,
@@ -211,7 +204,7 @@ func (v *Volume) AddDirectory(ctx context.Context, folder, ref string) error {
 		oras.PackManifestOptions{
 			Layers:              v.layers,
 			ConfigDescriptor:    &configDesc,
-			ManifestAnnotations: annotations,
+			ManifestAnnotations: v.Annotations,
 		},
 	)
 	if err != nil {
