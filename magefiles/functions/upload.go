@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/a1994sc/bootc-images/magefiles/utils"
-	"github.com/zarf-dev/zarf/src/pkg/logger"
-	"github.com/zarf-dev/zarf/src/pkg/zoci/archive"
-	"github.com/zarf-dev/zarf/src/pkg/zoci/image"
+	"github.com/a1994sc/bootc-images/src/pkg/utils"
+	"github.com/a1994sc/bootc-images/src/pkg/zoci/archive"
+	"github.com/a1994sc/bootc-images/src/pkg/zoci/image"
 )
 
 // Process will take in a directory and create a docker compatible image used as an image volume mount
@@ -48,10 +47,10 @@ func Process(ctx context.Context, path string, repo *string, version *string, pl
 	}
 	defer func() {
 		if err := iv.Clean(); err != nil {
-			logger.From(ctx).Debug("failed to clean image volume workspace", "error", err)
+			fmt.Println("failed to clean image volume workspace", "error", err)
 		}
 		if err := os.RemoveAll(tmpDir); err != nil {
-			logger.From(ctx).Debug("failed to remove staging directory", "error", err)
+			fmt.Println("failed to remove staging directory", "error", err)
 		}
 	}()
 
@@ -65,7 +64,7 @@ func Process(ctx context.Context, path string, repo *string, version *string, pl
 	}
 	defer func() {
 		if closeErr := out.Close(); closeErr != nil {
-			logger.From(ctx).Debug("failed to close image volume archive", "error", closeErr)
+			fmt.Println("failed to close image volume archive", "error", closeErr)
 		}
 	}()
 
