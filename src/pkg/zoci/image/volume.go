@@ -38,6 +38,9 @@ type Volume struct {
 	// via AddFile/AddDirectory. The zero value behaves as
 	// VolumeCompressionUncompressed.
 	Compression VolumeCompression
+	Licenses    string
+	Description string
+	Source      string
 	layers      []ocispec.Descriptor
 	tmp         string
 	root        string
@@ -186,17 +189,29 @@ func (v *Volume) AddDirectory(ctx context.Context, folder, ref string) error {
 	}
 	fmt.Println("pushed image volume config", "digest", configDesc.Digest, "size", configDesc.Size)
 
+	annotations := map[string]string{
+		ocispec.AnnotationCreated: format,
+	}
+
+	if v.Description != "" {
+		annotations[ocispec.AnnotationDescription] = v.Description
+	}
+	if v.Source != "" {
+		annotations[ocispec.AnnotationSource] = v.Source
+	}
+	if v.Licenses != "" {
+		annotations[ocispec.AnnotationLicenses] = v.Licenses
+	}
+
 	manifestDesc, err := oras.PackManifest(
 		ctx,
 		v.store,
 		oras.PackManifestVersion1_1,
 		"application/vnd.oci.image.manifest.v1+json",
 		oras.PackManifestOptions{
-			Layers:           v.layers,
-			ConfigDescriptor: &configDesc,
-			ManifestAnnotations: map[string]string{
-				ocispec.AnnotationCreated: format,
-			},
+			Layers:              v.layers,
+			ConfigDescriptor:    &configDesc,
+			ManifestAnnotations: annotations,
 		},
 	)
 	if err != nil {
