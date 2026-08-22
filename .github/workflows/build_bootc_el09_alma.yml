@@ -222,18 +222,20 @@ jobs:
           oras manifest index create \
             ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.type }}/alma${{ env.MAJOR }}:latest \
             ${{ needs.build-bootc.outputs.tag }}-amd64 ${{ needs.build-bootc.outputs.tag }}-arm64 \
-            --annotation="org.opencontainers.image.description=\"docker based image volume mount for AlmaLinux package updates\"" \
-            --annotation="org.opencontainers.image.source=\"github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}\"" \
-            --annotation="org.opencontainers.image.licenses=\"Apache-2.0\""
+            --annotation="org.opencontainers.image.description=docker based image volume mount for AlmaLinux package updates" \
+            --annotation="org.opencontainers.image.source=github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}" \
+            --annotation="org.opencontainers.image.licenses=Apache-2.0" \
+            --annotation="org.opencontainers.image.revision=${{ github.sha }}"
 
       - name: Create manifest list and pushes, tagged
         run: |-
           oras manifest index create \
             ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.type }}/alma${{ env.MAJOR }}:${{ needs.build-bootc.outputs.tag }} \
             ${{ needs.build-bootc.outputs.tag }}-amd64 ${{ needs.build-bootc.outputs.tag }}-arm64 \
-            --annotation="org.opencontainers.image.description=\"docker based image volume mount for AlmaLinux package updates\"" \
-            --annotation="org.opencontainers.image.source=\"github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}\"" \
-            --annotation="org.opencontainers.image.licenses=\"Apache-2.0\""
+            --annotation="org.opencontainers.image.description=docker based image volume mount for AlmaLinux package updates" \
+            --annotation="org.opencontainers.image.source=github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}" \
+            --annotation="org.opencontainers.image.licenses=Apache-2.0" \
+            --annotation="org.opencontainers.image.revision=${{ github.sha }}"
     outputs:
       tag: ${{ needs.build-bootc.outputs.tag }}
 
