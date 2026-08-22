@@ -13,6 +13,9 @@ on:
       - 'almalinux/9\.[0-9]+-[0-9]+'
   schedule:
     - cron: '15 0 * * 0'
+  pull_request:
+    branches:
+      - main
 
 env:
   DISTRO: "almalinux"
@@ -73,6 +76,8 @@ jobs:
       - info
     permissions:
       packages: write
+    env:
+      REGISTRY_AUTH_FILE: /run/containers/0/auth.json
     container:
       # renovate: datasource=docker
       image: quay.io/almalinuxorg/9-base:9.8-20260602
@@ -82,26 +87,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Get container tools into builder
-        run: |-
-          dnf -y install podman buildah skopeo fuse-overlayfs
-
-      # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
-      - name: Workaround open podman-login action issue
-        env:
-          auth: "{ \"auths\": {} }"
         run: |
-          mkdir -p $HOME/.docker
-          echo $auth > $HOME/.docker/config.json
-
-      - name: Use buildah bud to create the image
-        id: build-image
-        uses: redhat-actions/buildah-build@3a51aade9afa17e5c78256bcbe2e1ee08c7b995b # v3.0.2
-        with:
-          image: ${{ env.IMAGE_NAME }}
-          tags: latest ${{ needs.info.outputs.tag }}
-          containerfiles: |-
-            el09/${{ env.DISTRO }}/Containerfile
-          context: ./.
+          dnf -y install podman buildah skopeo fuse-overlayfs
 
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
@@ -111,13 +98,21 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           auth_file_path: /run/containers/0/auth.json
 
+      - name: Use buildah bud to create the image
+        id: build-image
+        uses: redhat-actions/buildah-build@3a51aade9afa17e5c78256bcbe2e1ee08c7b995b # v3.0.2
+        with:
+          image: ${{ env.IMAGE_NAME }}
+          tags: latest ${{ needs.info.outputs.tag }}
+          containerfiles: |-
+            el10/${{ env.DISTRO }}/Containerfile
+          context: ./.
+
       - name: Re-tag the built image
         run: |-
           podman tag ${{ steps.build-image.outputs.image }}:${{ needs.info.outputs.tag }} ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
 
       - name: Push the built image
-        env:
-          REGISTRY_AUTH_FILE: /run/containers/0/auth.json
         run: |-
           podman push --tls-verify=true ghcr.io/${{ github.repository_owner }}/${{ steps.build-image.outputs.image }}${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
     outputs:
@@ -142,6 +137,10 @@ jobs:
       image: quay.io/almalinuxorg/9-base:9.8-20260602
       # needed for login to ghcr
       options: --privileged
+    env:
+      REGISTRY_AUTH_FILE: /run/containers/0/auth.json
+      IMAGE: |-
+        ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma9:${{ needs.info.outputs.tag }}-${{ matrix.platform }}
     steps:
       - name: Get container tools into builder
         run: |-
@@ -149,18 +148,13 @@ jobs:
 
           dnf config-manager --set-enabled crb
 
-          dnf install --refresh --assumeyes podman fuse-overlayfs createrepo
+          dnf install --refresh --assumeyes podman fuse-overlayfs createrepo file golang
+
+      - name: Clone the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install oras tool
         uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
-
-      # workaround for https://github.com/redhat-actions/podman-login/issues/42 since the docker config from the host doesn't come up to the container
-      - name: Workaround open podman-login action issue
-        env:
-          auth: "{ \"auths\": {} }"
-        run: |
-          mkdir -p $HOME/.docker
-          echo $auth > $HOME/.docker/config.json
 
       - name: Log in to the GitHub Container registry
         uses: redhat-actions/podman-login@50c2d9a331bb67c8fdab99b86455fad05e2e3252 # v2.0
@@ -174,15 +168,9 @@ jobs:
         run: |-
           mkdir -p /root/rpm
 
-      - name: Download group packages (core and standard)
-        run: |-
-          dnf group install core standard \
-            --releasever ${{ env.MAJOR }} --assumeyes --downloadonly --destdir /root/rpm --installroot /root/rpm --nodocs --refresh
-
       - name: Download packages
         run: |-
-          dnf install yq container-selinux ansible-core \
-            ansible-collection-ansible-posix ansible-collection-community-general \
+          dnf install @core @standard yq container-selinux ansible-core \
             --releasever ${{ env.MAJOR }} --assumeyes --downloadonly --destdir /root/rpm --installroot /root/rpm --nodocs --refresh
 
       - name: Create local repo files
@@ -190,45 +178,32 @@ jobs:
           rm -rf /root/rpm/var /root/rpm/usr
           createrepo /root/rpm
 
-      - name: Install yq
+      - name: Create tar ball from directory
         run: |-
-          dnf install --assumeyes --releasever ${{ env.MAJOR }} yq
+          go run -mod=vendor ./main.go process /root/rpm \
+            -os=linux -arch="${{ matrix.platform }}" \
+            -repo="adrp.xyz/rpm" \
+            -version="latest" \
+            -tar="/root/adrp.xyz_rpm.tar"
 
-      - name: Create config file
+      - name: Upload tarball to ghcr
         run: |-
-          yq --null-input -oj -pj '{"architecture": "${{ matrix.platform }}", "config": {}, "created": "1970-01-01T00:00:00Z", "history": [], "os": "linux", "rootfs": { "type": "layers", "diff_ids": [] }}' > /root/config.json
-
-      - name: Upload to ghcr
-        working-directory: /root/rpm
-        run: |-
-          tar -cf  repodata.tar    repodata
-          tar -czf repodata.tar.gz repodata
-
-          find -type f -name "*.rpm" | sed 's|./||g' | xargs -I {} tar --owner=0 --group=0 --no-same-owner --no-same-permissions --mtime="1970-01-01 00:00:00" -cf  {}.tar {}
-          find -type f -name "*.rpm" | sed 's|./||g' | xargs -I {} tar --owner=0 --group=0 --no-same-owner --no-same-permissions --mtime="1970-01-01 00:00:00" -czf {}.tar.gz {}
-
-          find /root/rpm -type f -name "*.tar" -exec sha256sum {} \; | sed -E 's#([a-z0-9]+) .+#sha256:\1#g' | xargs -I {} yq -i '.rootfs.diff_ids += "{}"' /root/config.json
-
-          find /root/rpm -type f -name "*.tar.gz" | sed 's#/root/rpm/##g' | \
-            awk 'BEGIN {printf "oras push --artifact-type application/vnd.oci.image.manifest.v1+json --config /root/config.json:application/vnd.oci.image.config.v1+json --registry-config /run/containers/0/auth.json --no-tty ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/rpm/alma${{ env.MAJOR }}:${{ needs.info.outputs.tag }}-${{ matrix.platform }}"} {printf " %s:application/vnd.oci.image.layer.v1.tar+gzip ", $0} END{print ""}' | \
-            xargs -I {} sh -c "eval {}"
+          oras cp --from-oci-layout --no-tty /root/adrp.xyz_rpm.tar:latest ${{ env.IMAGE }}
     outputs:
       tag: ${{ needs.info.outputs.tag }}
 
   merge:
-    name: Merge artifacts arch
+    name: Merge artifacts
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        artifact:
-          - "bootc"
-          - "rpm"
     needs:
       - build-bootc
       - build-rpm
-    permissions:
-      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        type:
+          - bootc
+          - rpm
     steps:
       - name: Install oras tool
         uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
@@ -243,10 +218,10 @@ jobs:
       - name: Create manifest list and pushes
         run: |-
           oras manifest index create \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/alma${{ env.MAJOR }}:latest \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.type }}/alma${{ env.MAJOR }}:latest \
             ${{ needs.build-bootc.outputs.tag }}-amd64 ${{ needs.build-bootc.outputs.tag }}-arm64
           oras manifest index create \
-            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.artifact }}/alma${{ env.MAJOR }}:${{ needs.build-bootc.outputs.tag }} \
+            ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/${{ matrix.type }}/alma${{ env.MAJOR }}:${{ needs.build-bootc.outputs.tag }} \
             ${{ needs.build-bootc.outputs.tag }}-amd64 ${{ needs.build-bootc.outputs.tag }}-arm64
     outputs:
       tag: ${{ needs.build-bootc.outputs.tag }}
@@ -259,12 +234,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        type:
+          - bootc
+          - rpm
         platform:
           - amd64
           - arm64
-        flavor:
-          - rpm
-          - bootc
     permissions:
       packages: write
     steps:
@@ -287,7 +262,7 @@ jobs:
             el09/${{ env.DISTRO }} \
             --architecture ${{ matrix.platform }} \
             --confirm \
-            --flavor ${{ matrix.flavor }} \
+            --flavor ${{ matrix.type }} \
             --set version=${{ needs.merge.outputs.tag }}
 
       - name: Publish Zarf package
