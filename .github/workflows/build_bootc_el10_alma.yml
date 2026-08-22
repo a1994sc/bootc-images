@@ -7,6 +7,8 @@ on:
       - el10/almalinux/**
       - static/**
       - .github/workflows/build_bootc_el10_alma.yml
+      - magefiles/**
+      - src/pkg/**
     branches:
       - main
     tags:
