@@ -82,7 +82,7 @@ jobs:
       REGISTRY_AUTH_FILE: /run/containers/0/auth.json
     container:
       # renovate: datasource=docker
-      image: quay.io/almalinuxorg/10-base:10.2-20260602
+      image: quay.io/almalinuxorg/10-base:10.2-20260902
       options: --privileged
     steps:
       - name: Clone the repository
@@ -136,7 +136,7 @@ jobs:
       packages: write
     container:
       # renovate: datasource=docker
-      image: quay.io/almalinuxorg/10-base:10.2-20260602
+      image: quay.io/almalinuxorg/10-base:10.2-20260902
       # needed for login to ghcr
       options: --privileged
     env:
