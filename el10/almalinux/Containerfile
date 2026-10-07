@@ -1,6 +1,6 @@
 FROM ghcr.io/mikefarah/yq:4.54.1 AS yq-binary
 
-FROM quay.io/almalinuxorg/almalinux-bootc:10.2-20261006
+FROM quay.io/almalinuxorg/almalinux-bootc:10.2-20261007
 
 COPY static/                /
 COPY el10/almalinux/static/ /
