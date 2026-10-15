@@ -1,4 +1,4 @@
-FROM registry.redhat.io/rhel9/rhel-bootc:9.8-1791764516
+FROM registry.redhat.io/rhel9/rhel-bootc:9.8-1792048133
 
 COPY static/ /
 
