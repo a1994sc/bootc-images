@@ -62,7 +62,7 @@ jobs:
       REGISTRY: ghcr.io/${{ github.repository_owner }}
     container:
       # renovate: datasource=docker
-      image: registry.access.redhat.com/ubi9/ubi:9.8-1793580630
+      image: registry.access.redhat.com/ubi9/ubi:9.8-1793861509
       options: --privileged
     steps:
       - name: Clone the repository
